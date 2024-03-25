@@ -3,6 +3,7 @@ import { SendSmsWithPlayMobile } from 'src/common/utils/smsSender.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { ISendOtp } from './interfaces/sendOtpResponse.interface';
 import {
+  BadRequestException,
   Inject,
   NotAcceptableException,
   NotFoundException,
@@ -11,7 +12,6 @@ import * as crypto from 'crypto';
 import { CardType } from 'src/common/enum/cardType.enum';
 import { payment } from '@prisma/client';
 import { DecryptService } from '../decrypt/decrypt.service';
-import * as soap from 'soap';
 import * as parser from 'xml2json';
 interface IGetDataByPan {
   phone: string;
@@ -213,69 +213,115 @@ export class HumoProcessingService {
   }
 
   private async holdRequest(payment: payment): Promise<IHoldRequest> {
-    try {
-      const epos = await this.prisma.epos.findFirst({
-        where: {
-          cashbox_id: payment.cashbox_id,
-          type: 'humo',
-        },
-      });
-      if (!epos) {
-        throw new NotFoundException('EPOS for Humo not found');
-      }
-      const { pan, expiry } = this.decrypService.decryptCardCryptogram(
-        payment.card_cryptogram_packet,
+    const epos = await this.prisma.epos.findFirst({
+      where: {
+        cashbox_id: payment.cashbox_id,
+        type: 'humo',
+      },
+    });
+    if (!epos) {
+      throw new NotFoundException('EPOS for Humo not found');
+    }
+    const { pan, expiry } = this.decrypService.decryptCardCryptogram(
+      payment.card_cryptogram_packet,
+    );
+    const xml = `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-
+    ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema -
+    instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ebppif1="urn:PaymentServer">
+    <SOAP-ENV:Body>
+    <ebppif1:Payment>
+    <language>en</language>
+    <billerRef>SOAP_DMS</billerRef>
+    <payinstrRef>SOAP_DMS</payinstrRef>
+    <sessionID>SOAP_DMS_20220106090000</sessionID>
+    <paymentRef>${payment.id}</paymentRef>
+    <details>
+    <item>
+    <name>pan</name>
+    <value>${pan}</value>
+    </item>
+    <item>
+    <name>expiry</name>
+    <value>${expiry}</value>
+    </item>
+    <item>
+    <name>ccy_code</name>
+    <value>860</value>
+    </item>
+    <item>
+    <name>amount</name>
+    <value>${payment.amount}</value>
+    </item>
+    <item>
+    <name>merchant_id</name>
+    <value>${epos.merchant_id}</value>
+    </item>
+    <item>
+    <name>terminal_id</name>
+    <value>${epos.terminal_id}</value>
+    </item>
+    <item>
+    <name>point_code</name>
+    <value>${this.humoSoapPointCode}</value>
+    </item>
+    <item>
+    <name>centre_id</name>
+    <value>${this.humoSoapCenterId}</value>
+    </item>
+    </details>
+    <paymentOriginator>${this.humoSoapUsername}</paymentOriginator>
+    </ebppif1:Payment>
+    </SOAP-ENV:Body>
+    </SOAP-ENV:Envelope>`;
+
+    const jsonData: any = await axios.post(this.humoSoapUrl, xml, {
+      headers: {
+        'Content-Type': 'text/xml',
+      },
+      auth: {
+        username: this.humoSoapUsername,
+        password: this.humoSoapPassword,
+      },
+    });
+    const jsonfromXml = await parser.toJson(jsonData.data);
+    const json =
+      jsonfromXml['SOAP-ENV:Envelope']['SOAP-ENV:Body'][
+        'ebppif1:PaymentResponse'
+      ];
+    const paymentID = json['paymentID'];
+    const paymentRef = json['paymentRef'];
+    const action = json['action'];
+    if (action != 4) {
+      throw new BadRequestException(
+        'Fail. Check your credentials and try again',
       );
+    }
+    return {
+      paymentIdFromHumo: paymentID,
+      paymentRefFromHumo: paymentRef,
+    };
+  }
+
+  async confirmPaymentHumo(
+    paymentIDFromHumo: string | number,
+    paymentRefFromHumo: string | number,
+  ) {
+    try {
       const xml = `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-
-      ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema -
+      ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-
       instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ebppif1="urn:PaymentServer">
       <SOAP-ENV:Body>
       <ebppif1:Payment>
-      <language>en</language>
-      <billerRef>SOAP_DMS</billerRef>
-      <payinstrRef>SOAP_DMS</payinstrRef>
-      <sessionID>SOAP_DMS_20220106090000</sessionID>
-      <paymentRef>${payment.id}</paymentRef>
-      <details>
-      <item>
-      <name>pan</name>
-      <value>${pan}</value>
-      </item>
-      <item>
-      <name>expiry</name>
-      <value>${expiry}</value>
-      </item>
-      <item>
-      <name>ccy_code</name>
-      <value>860</value>
-      </item>
-      <item>
-      <name>amount</name>
-      <value>${payment.amount}</value>
-      </item>
-      <item>
-      <name>merchant_id</name>
-      <value>${epos.merchant_id}</value>
-      </item>
-      <item>
-      <name>terminal_id</name>
-      <value>${epos.terminal_id}</value>
-      </item>
-      <item>
-      <name>point_code</name>
-      <value>${this.humoSoapPointCode}</value>
-      </item>
-      <item>
-      <name>centre_id</name>
-      <value>${this.humoSoapCenterId}</value>
-      </item>
-      </details>
-      <paymentOriginator>${this.humoSoapUsername}</paymentOriginator>
+      <paymentID>${paymentIDFromHumo}</paymentID>
+      <paymentRef>${paymentRefFromHumo}</paymentRef>
+      <confirmed>true</confirmed>
+      <finished>true</finished>
+      <paymentOriginator>aab</paymentOriginator>
       </ebppif1:Payment>
       </SOAP-ENV:Body>
       </SOAP-ENV:Envelope>`;
 
-      const jsonData: any = await axios.post(this.humoSoapUrl, xml, {
+      await axios.post(this.humoSoapUrl, xml, {
         headers: {
           'Content-Type': 'text/xml',
         },
@@ -284,47 +330,6 @@ export class HumoProcessingService {
           password: this.humoSoapPassword,
         },
       });
-      const json = await parser.toJson(jsonData.data);
-      console.log('JSON', json);
-
-      return {
-        paymentIdFromHumo: jsonData.paymentID,
-        paymentRefFromHumo: jsonData.paymentRef,
-      };
-    } catch (error) {
-      console.log(error);
-      console.log('Error hold request humo: ' + error.message);
-      throw new Error('Error hold request humo');
-    }
-  }
-
-  async confirmPaymentHumo(
-    paymentIDFromHumo: string | number,
-    paymentRefFromHumo: string | number,
-  ) {
-    try {
-      const data = {
-        paymentID: paymentIDFromHumo,
-        paymentRef: paymentRefFromHumo,
-        confirmed: true,
-        finished: true,
-        paymentOriginator: this.humoSoapUsername,
-      };
-      const client = await soap.createClientAsync(this.humoSoapUrl, {
-        wsdl_options: {
-          method: 'POST',
-          data,
-        },
-      });
-      client.setSecurity(
-        new soap.BasicAuthSecurity(
-          this.humoSoapUsername,
-          this.humoSoapPassword,
-        ),
-      );
-      const response = await client.PaymentAsync(data);
-      const jsonData = response[0];
-      return jsonData;
     } catch (error) {
       console.log('Error confirming payment ' + error.message);
       throw new Error('Error confirming payment ');
