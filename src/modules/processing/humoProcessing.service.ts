@@ -226,47 +226,106 @@ export class HumoProcessingService {
       const { pan, expiry } = this.decrypService.decryptCardCryptogram(
         payment.card_cryptogram_packet,
       );
+      const xml = `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-
+      ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema -
+      instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ebppif1="urn:P aymentServer">
+      <SOAP-ENV:Body>
+      <ebppif1:Payment>
+      <language>en</language>
+      <billerRef>SOAP_DMS</billerRef>
+      <payinstrRef>SOAP_DMS</payinstrRef>
+      <sessionID>SOAP_DMS_20220106090000</sessionID>
+      <paymentRef>${payment.id}</paymentRef>
+      <details>
+      <item>
+      <name>pan</name>
+      <value>${pan}</value>
+      </item>
+      <item>
+      <name>expiry</name>
+      <value>${expiry}</value>
+      </item>
+      <item>
+      <name>ccy_code</name>
+      <value>860</value>
+      </item>
+      <item>
+      <name>amount</name>
+      <value>${payment.amount}</value>
+      </item>
+      <item>
+      <name>merchant_id</name>
+      <value>${epos.merchant_id}</value>
+      </item>
+      <item>
+      <name>terminal_id</name>
+      <value>${epos.terminal_id}</value>
+      </item>
+      <item>
+      <name>point_code</name>
+      <value>${this.humoSoapPointCode}</value>
+      </item>
+      <item>
+      <name>centre_id</name>
+      <value>${this.humoSoapCenterId}</value>
+      </item>
+      </details>
+      <paymentOriginator>${this.humoSoapUsername}</paymentOriginator>
+      </ebppif1:Payment>
+      </SOAP-ENV:Body>
+      </SOAP-ENV:Envelope>`;
 
-      const data = {
-        language: 'en',
-        billerRef: 'SOAP_DMS',
-        payinstrRef: 'SOAP_DMS',
-        sessionID: 'SOAP_DMS_20220106090000', //сюда генерить random uuid?
-        paymentRef: payment.id,
-        details: {
-          item: [
-            { name: 'pan', value: pan },
-            { name: 'expiry', value: expiry },
-            { name: 'ccy_code', value: '860' },
-            { name: 'amount', value: payment.amount },
-            { name: 'merchant_id', value: epos.merchant_id },
-            { name: 'terminal_id', value: epos.terminal_id },
-            { name: 'point_code', value: this.humoSoapPointCode },
-            { name: 'centre_id', value: this.humoSoapCenterId },
-          ],
+      const jsonData: any = await axios.post(this.humoSoapUrl, xml, {
+        headers: {
+          'Content-Type': 'text/xml',
         },
-        paymentOriginator: this.humoSoapUsername,
-      };
-      const client = await soap.createClientAsync(this.humoSoapUrl, {
-        wsdl_options: {
-          method: 'post',
-          overrides: {
-            ebppif1: 'urn:PaymentServer',
-          },
-          data,
+        auth: {
+          username: this.humoSoapUsername,
+          password: this.humoSoapPassword,
         },
       });
-      client.setSecurity(
-        new soap.BasicAuthSecurity(
-          this.humoSoapUsername,
-          this.humoSoapPassword,
-        ),
-      );
-      const response = await client.PaymentAsync(data);
-      const jsonData = response[0];
-      if (jsonData.action != 4) {
-        throw new BadRequestException('Error holding payment');
-      }
+      console.log(jsonData);
+
+      // const data = {
+      //   language: 'en',
+      //   billerRef: 'SOAP_DMS',
+      //   payinstrRef: 'SOAP_DMS',
+      //   sessionID: 'SOAP_DMS_20220106090000', //сюда генерить random uuid?
+      //   paymentRef: payment.id,
+      //   details: {
+      //     item: [
+      //       { name: 'pan', value: pan },
+      //       { name: 'expiry', value: expiry },
+      //       { name: 'ccy_code', value: '860' },
+      //       { name: 'amount', value: payment.amount },
+      //       { name: 'merchant_id', value: epos.merchant_id },
+      //       { name: 'terminal_id', value: epos.terminal_id },
+      //       { name: 'point_code', value: this.humoSoapPointCode },
+      //       { name: 'centre_id', value: this.humoSoapCenterId },
+      //     ],
+      //   },
+      //   paymentOriginator: this.humoSoapUsername,
+      // };
+      // const client = await soap.createClientAsync(this.humoSoapUrl, {
+      //   wsdl_options: {
+      //     method: 'POST',
+      //     overrides: {
+      //       ebppif1: 'urn:PaymentServer',
+      //     },
+      //     data,
+      //   },
+      // });
+      // client.setSecurity(
+      //   new soap.BasicAuthSecurity(
+      //     this.humoSoapUsername,
+      //     this.humoSoapPassword,
+      //   ),
+      // );
+      // const response = await client.PaymentAsync(data);
+      // const jsonData = response[0];
+      // if (jsonData.action != 4) {
+      //   throw new BadRequestException('Error holding payment');
+      // }
       return {
         paymentIdFromHumo: jsonData.paymentID,
         paymentRefFromHumo: jsonData.paymentRef,
