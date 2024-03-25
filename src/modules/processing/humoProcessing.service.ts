@@ -291,7 +291,7 @@ export class HumoProcessingService {
       };
       const client = await soap.createClientAsync(this.humoSoapUrl, {
         wsdl_options: {
-          method: 'post',
+          method: 'POST',
           data,
         },
       });
