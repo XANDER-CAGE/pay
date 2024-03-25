@@ -11,9 +11,12 @@ import { DecryptModule } from '../decrypt/decrypt.module';
   controllers: [],
   providers: [
     ProcessingService,
-    SendSmsWithPlayMobile,
     HumoProcessingService,
     UzCardProcessingService,
+    {
+      provide: SendSmsWithPlayMobile,
+      useClass: SendSmsWithPlayMobile,
+    },
   ],
   exports: [ProcessingService],
 })
