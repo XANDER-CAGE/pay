@@ -228,7 +228,7 @@ export class HumoProcessingService {
       );
       const xml = `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-
       ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema -
-      instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ebppif1="urn:P aymentServer">
+      instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ebppif1="urn:PaymentServer">
       <SOAP-ENV:Body>
       <ebppif1:Payment>
       <language>en</language>
@@ -331,6 +331,8 @@ export class HumoProcessingService {
         paymentRefFromHumo: jsonData.paymentRef,
       };
     } catch (error) {
+      console.log(error);
+
       console.log('Error hold request humo: ' + error.message);
       throw new Error('Error hold request humo');
     }
