@@ -1,8 +1,10 @@
-<form name="downloadForm" action="<%= TermUrl %>" method="POST">
-    <input type="hidden" name="PaRes" value="<%= PaRes %>">
-        <input type="hidden" name="MD" value="<%= md %>">
+<form name="downloadForm" action="https://lc.ellcoma.ru/test.php" method="POST">
+  <input type="hidden" name="PaRes" value="<%= PaRes %>" />
+  <input type="hidden" name="MD" value="<%= md %>" />
 </form>
 <script>
-    window.onload = submitForm;
-    function submitForm() { downloadForm.submit(); }
+  window.onload = submitForm;
+  function submitForm() {
+    downloadForm.submit();
+  }
 </script>
