@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ISendOtp } from './interfaces/sendOtpResponse.interface';
 import {
   BadRequestException,
+  Inject,
   NotAcceptableException,
   NotFoundException,
 } from '@nestjs/common';
@@ -59,6 +60,7 @@ export class HumoProcessingService {
   private readonly humoMiddlewareToken: string;
   private readonly humoMiddlewareUrl: string;
   constructor(
+    @Inject(SendSmsWithPlayMobile)
     private readonly smsSender: SendSmsWithPlayMobile,
     private readonly prisma: PrismaService,
     private readonly decrypService: DecryptService,
