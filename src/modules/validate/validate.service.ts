@@ -33,6 +33,7 @@ export class ValidateService {
       +dto.smsCode,
       +dto.otpId,
     );
+    console.log('validate service cardData: ', cardData);
     await this.prisma.card_info.upsert({
       where: {
         processing_id: String(cardData.processingId),
