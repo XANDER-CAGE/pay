@@ -316,7 +316,7 @@ export class HumoProcessingService {
       <paymentRef>${paymentRefFromHumo}</paymentRef>
       <confirmed>true</confirmed>
       <finished>true</finished>
-      <paymentOriginator>aab</paymentOriginator>
+      <paymentOriginator>${this.humoSoapUsername}</paymentOriginator>
       </ebppif1:Payment>
       </SOAP-ENV:Body>
       </SOAP-ENV:Envelope>`;
@@ -332,6 +332,7 @@ export class HumoProcessingService {
       });
       return;
     } catch (error) {
+      console.log(error);
       console.log('Error confirming payment ' + error.message);
       throw new Error('Error confirming payment ');
     }
