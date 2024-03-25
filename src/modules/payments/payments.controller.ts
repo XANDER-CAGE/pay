@@ -100,7 +100,7 @@ export class PaymentsController {
         Status: response.Status,
         StatusCode: 5,
         CultureName: 'uz',
-        Reason: response.Reason || null,
+        Reason: 'Approved',
         CardHolderMessage: 'Insufficient funds',
         Type: 0,
         Refunded: false,
@@ -121,6 +121,8 @@ export class PaymentsController {
       Message: null,
       ErrorCode: null,
     };
+    console.log('post3ds mockedResponse: ', mockedResponse);
+
     return mockedResponse;
   }
 
