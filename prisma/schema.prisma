@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model bin {
+  id             BigInt           @id @default(autoincrement())
+  bin            String           @unique @db.VarChar(255)
+  logo_url       String?          @db.VarChar(255)
+  bank_name      String?          @db.VarChar(255)
+  currency       String?          @db.VarChar(255)
+  hide_cvv_input Boolean
+  card_type      processing_enum?
+  country_code   Int?
+  created_at     DateTime?        @default(now()) @db.Date
+  updated_at     DateTime?        @default(now()) @db.Date
+}
+
+model card_info {
+  id              BigInt           @id @default(autoincrement())
+  cashbox_id      BigInt?
+  processing_id   String?          @unique @db.VarChar(255)
+  pan             String?          @db.VarChar(255)
+  expiry          String?          @db.VarChar(255)
+  status          Int?
+  phone           String?          @db.VarChar(255)
+  fullname        String?          @db.VarChar(255)
+  sms             Boolean?
+  pincnt          Int?
+  card_type       processing_enum?
+  hold_amount     BigInt?
+  cashback_amount BigInt?
+  aacct           String?          @db.VarChar(255)
+  tk              String?          @db.VarChar(255)
+  par             String?          @db.VarChar(255)
+  created_at      DateTime?        @default(now()) @db.Date
+  updated_at      DateTime?        @default(now()) @db.Date
+  cashbox         cashbox?         @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  payment         payment[]
+}
+
+model cashbox {
+  id                   BigInt               @id @default(autoincrement())
+  logo                 String?              @db.VarChar(255)
+  name                 String?              @db.VarChar(255)
+  mode                 cashbox_mode_enum?
+  public_id            String?              @db.VarChar(255)
+  password_api         String?              @db.VarChar(255)
+  status               cashbox_status_enum?
+  support_url          String?              @db.VarChar(255)
+  support_number       String?              @db.VarChar(255)
+  notifications_email  String?              @db.VarChar(255)
+  notifications_number String?              @db.VarChar(255)
+  companyId            BigInt?
+  created_at           DateTime?            @default(now()) @db.Date
+  updated_at           DateTime?            @default(now()) @db.Date
+  card_info            card_info[]
+  company              company?             @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  epos                 epos[]
+  payment              payment[]
+  session              session[]
+}
+
+model company {
+  id                BigInt        @id @default(autoincrement())
+  account_id        String?       @db.VarChar(255)
+  trade_name        String        @db.VarChar(255)
+  legal_name        String        @db.VarChar(255)
+  business_area     String        @db.VarChar(255)
+  tax_id_number     String        @db.VarChar(255)
+  bank_account      String        @db.VarChar(255)
+  director_fullname String        @db.VarChar(255)
+  address           String        @db.VarChar(255)
+  organization_id   BigInt?
+  created_at        DateTime?     @default(now()) @db.Date
+  updated_at        DateTime?     @default(now()) @db.Date
+  cashbox           cashbox[]
+  organization      organization? @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model epos {
+  id          BigInt           @id @default(autoincrement())
+  type        processing_enum?
+  merchant_id String           @db.VarChar(255)
+  terminal_id String           @db.VarChar(255)
+  cashbox_id  BigInt?
+  created_at  DateTime?        @default(now()) @db.Date
+  updated_at  DateTime?        @default(now()) @db.Date
+  cashbox     cashbox?         @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model organization {
+  id         BigInt    @id @default(autoincrement())
+  name       String    @db.VarChar(255)
+  address    String?   @db.VarChar(255)
+  phone      String?   @db.VarChar(255)
+  created_at DateTime? @default(now()) @db.Date
+  updated_at DateTime? @default(now()) @db.Date
+  company    company[]
+}
+
+model otp {
+  id         BigInt    @id @default(autoincrement())
+  code       Int
+  payment_id BigInt?
+  created_at DateTime? @default(now()) @db.Date
+  updated_at DateTime? @default(now()) @db.Date
+  payment    payment?  @relation(fields: [payment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model payer {
+  id          BigInt    @id @default(autoincrement())
+  first_name  String    @db.VarChar(255)
+  last_name   String    @db.VarChar(255)
+  middle_name String?   @db.VarChar(255)
+  birth       DateTime? @db.Date
+  address     String?   @db.VarChar(255)
+  street      String?   @db.VarChar(255)
+  city        String?   @db.VarChar(255)
+  country     String?   @db.VarChar(255)
+  phone       String?   @db.VarChar(255)
+  postcode    String?   @db.VarChar(255)
+  created_at  DateTime? @default(now()) @db.Date
+  updated_at  DateTime? @default(now()) @db.Date
+}
+
+model payment {
+  id                     BigInt           @id @default(autoincrement())
+  cashbox_id             BigInt?
+  status_code            Int?
+  refunded               Boolean?
+  card_info_id           BigInt?
+  ip_city                String?          @db.VarChar(255)
+  ip_address             String?          @db.VarChar(255)
+  ip_region              String?          @db.VarChar(255)
+  ip_country             String?          @db.VarChar(255)
+  processing             processing_enum?
+  amount                 Decimal          @db.Decimal
+  currency               String           @db.VarChar(255)
+  invoice_id             String           @db.VarChar(255)
+  description            String?          @db.VarChar(255)
+  account_id             String?          @db.VarChar(255)
+  name                   String?          @db.VarChar(255)
+  card_cryptogram_packet String
+  status                 String           @default("Pending") @db.VarChar(255)
+  created_at             DateTime?        @default(now()) @db.Date
+  updated_at             DateTime?        @default(now()) @db.Date
+  otp                    otp[]
+  card_info              card_info?       @relation(fields: [card_info_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cashbox                cashbox?         @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model session {
+  id         BigInt    @id @default(autoincrement())
+  sid        String    @db.VarChar(255)
+  user_id    BigInt?
+  expires    DateTime  @db.Date
+  data       String?
+  created_at DateTime? @default(now()) @db.Date
+  updated_at DateTime? @default(now()) @db.Date
+  cashbox    cashbox?  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+enum cashbox_mode_enum {
+  prod
+  stage
+  dev
+}
+
+enum cashbox_status_enum {
+  active
+  deactive
+}
+
+enum processing_enum {
+  uzcard
+  humo
+  visa
+  mastercard
+}
