@@ -11,7 +11,7 @@ export class AcsController {
   @Get()
   @Render('acsForm')
   async renderAscForm(@Query() dto: GetAReqDto) {
-    const decodedAReq = this.acsService.decodeAReq(dto.aReq);
+    const decodedAReq = this.acsService.decodeAReq(dto.AReq);
     const decodeAReqJson = JSON.parse(decodedAReq);
     const decodedPaReq = JSON.parse(
       this.acsService.decodeAReq(decodeAReqJson.PaReq),

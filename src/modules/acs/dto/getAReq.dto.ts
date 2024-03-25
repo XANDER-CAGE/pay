@@ -5,5 +5,5 @@ export class GetAReqDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  aReq: string;
+  AReq: string;
 }
