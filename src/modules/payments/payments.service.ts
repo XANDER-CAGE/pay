@@ -17,7 +17,7 @@ interface IHandle3dsPost {
   Currency: string;
   PublicId: string;
   AccountId: string;
-  TransactionId: bigint;
+  TransactionId: number;
   InvoiceId: string;
   IpAddress: string;
   CardFirstSix: string;

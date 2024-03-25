@@ -1,4 +1,4 @@
 export interface ISendOtp {
-  otpId: bigint;
+  otpId: number;
   phone: string;
 }
