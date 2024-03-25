@@ -253,6 +253,7 @@ export class HumoProcessingService {
           overrides: {
             ebppif1: 'urn:PaymentServer',
           },
+          data,
         },
       });
       client.setSecurity(
@@ -294,6 +295,7 @@ export class HumoProcessingService {
           overrides: {
             ebppif1: 'urn:PaymentServer',
           },
+          data,
         },
       });
       client.setSecurity(
