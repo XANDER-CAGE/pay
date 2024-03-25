@@ -1,13 +1,14 @@
-import { Body, Controller, Res } from '@nestjs/common';
+import { Body, Controller, Post, Render } from '@nestjs/common';
 import { ValidateService } from './validate.service';
 import { ValidateDto } from './dto/validate.dto';
-import { Response } from 'express';
 
 @Controller('validate')
 export class ValidateController {
   constructor(private readonly validateService: ValidateService) {}
 
-  async validate(@Body() dto: ValidateDto, @Res() res: Response) {
+  @Post()
+  @Render('form')
+  async validate(@Body() dto: ValidateDto) {
     await this.validateService.validate(dto);
     const paResData = {
       IsCancelled: false,
@@ -19,11 +20,11 @@ export class ValidateController {
       'base64',
     );
     try {
-      res.render('form', {
+      return {
         PaRes: paResBase64,
         md: dto.md,
         TermUrl: dto.TermUrl,
-      });
+      };
     } catch (error) {
       console.error(
         'Ошибка при отправке POST-запроса на TermUrl:',
