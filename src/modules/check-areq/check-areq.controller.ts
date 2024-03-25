@@ -4,8 +4,8 @@ import { CheckAreqPostDto } from './dto/checkAreqPost.dto';
 import { Response } from 'express';
 import { ApiTags } from '@nestjs/swagger';
 
-@ApiTags('check-areq')
-@Controller('check-areq')
+@ApiTags('check_areq')
+@Controller('check_areq')
 export class CheckAreqController {
   constructor(private readonly checkAreqService: CheckAreqService) {}
 
