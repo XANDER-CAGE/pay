@@ -292,9 +292,6 @@ export class HumoProcessingService {
       const client = await soap.createClientAsync(this.humoSoapUrl, {
         wsdl_options: {
           method: 'post',
-          overrides: {
-            ebppif1: 'urn:PaymentServer',
-          },
           data,
         },
       });
