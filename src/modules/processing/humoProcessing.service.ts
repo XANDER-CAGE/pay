@@ -247,7 +247,9 @@ export class HumoProcessingService {
         },
         paymentOriginator: this.humoSoapUsername,
       };
-      const client = await soap.createClientAsync(this.humoSoapUrl);
+      const client = await soap.createClientAsync(this.humoSoapUrl, {
+        wsdl_options: { method: 'post' },
+      });
       client.setSecurity(
         new soap.BasicAuthSecurity(
           this.humoSoapUsername,
@@ -281,7 +283,9 @@ export class HumoProcessingService {
         finished: true,
         paymentOriginator: this.humoSoapUsername,
       };
-      const client = await soap.createClientAsync(this.humoSoapUrl);
+      const client = await soap.createClientAsync(this.humoSoapUrl, {
+        wsdl_options: { method: 'post' },
+      });
       client.setSecurity(
         new soap.BasicAuthSecurity(
           this.humoSoapUsername,
