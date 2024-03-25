@@ -30,8 +30,8 @@ export class ValidateService {
     const tk = crypto.createHash('md5').update(pan).digest('hex');
     const cardData = await this.processingService.validate(
       pan,
-      dto.smsCode,
-      dto.otpId,
+      +dto.smsCode,
+      +dto.otpId,
     );
     await this.prisma.card_info.upsert({
       where: {
