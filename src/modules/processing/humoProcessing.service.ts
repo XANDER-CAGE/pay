@@ -15,12 +15,8 @@ import { DecryptService } from '../decrypt/decrypt.service';
 import * as soap from 'soap';
 interface IGetDataByPan {
   phone: string;
-  cardholderId: string;
-}
-interface IGetFullnameByCardholderId {
-  cardholderName: string;
-  pan: string | number;
-  expiry: string | number;
+  nameOnCard: string;
+  expiry: string;
 }
 interface IValidate {
   processingId: string | number;
@@ -109,7 +105,8 @@ export class HumoProcessingService {
       const { data } = await axios.post(url, val, config);
       return {
         phone: data.result.mb.phone,
-        cardholderId: data.result.card.cardholderId,
+        nameOnCard: data.result.card.nameOnCard,
+        expiry: data.result.card.expiry,
       };
     } catch (error) {
       const errorMessage = 'Error retrieving phone by pan: ' + error.message;
@@ -129,39 +126,6 @@ export class HumoProcessingService {
     return otp;
   }
 
-  async getFullnameByCardholderId(
-    cardholderId: string | number,
-  ): Promise<IGetFullnameByCardholderId> {
-    try {
-      const url = this.humoMiddlewareUrl + '/v2/mb/customer';
-      const val = {
-        params: {
-          customerId: String(cardholderId) + '-09',
-          bankId: 'MB_STD',
-        },
-      };
-      const config = {
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          Accept: 'application/json',
-          Authorization: 'Bearer: ' + this.humoMiddlewareToken,
-        },
-      };
-
-      const { data } = await axios.post(url, val, config);
-      return {
-        cardholderName: data.result.cardholderName,
-        pan: data.result.Card[0].pan,
-        expiry: data.result.Card[0].expiry,
-      };
-    } catch (error) {
-      const errorMessage =
-        'Error retrieving name by cardholder id: ' + error.message;
-      console.log(errorMessage);
-      throw new Error(errorMessage);
-    }
-  }
-
   async validate(
     smsCode: number,
     otpId: number,
@@ -178,9 +142,7 @@ export class HumoProcessingService {
     if (otp.code != smsCode) {
       throw new NotAcceptableException('Wrong credentials');
     }
-    const { cardholderId, phone } = await this.getDataByPan(pan);
-    const { cardholderName, expiry } =
-      await this.getFullnameByCardholderId(cardholderId);
+    const { expiry, nameOnCard, phone } = await this.getDataByPan(pan);
 
     const cardId = crypto
       .createHash('md5')
@@ -190,7 +152,7 @@ export class HumoProcessingService {
     return {
       cardType: CardType.HUMO,
       expiry,
-      fullName: cardholderName,
+      fullName: nameOnCard,
       pan,
       phone,
       processingId: cardId,
@@ -200,12 +162,7 @@ export class HumoProcessingService {
   async handle3dsPost(payment: payment): Promise<IHandle3dsPost> {
     const { paymentIdFromHumo, paymentRefFromHumo } =
       await this.holdRequest(payment);
-    const success = await this.confirmPaymentHumo(
-      paymentIdFromHumo,
-      paymentRefFromHumo,
-    );
-    const details = {};
-    success.details.map((el) => (details[el.name] = el.value));
+    await this.confirmPaymentHumo(paymentIdFromHumo, paymentRefFromHumo);
     const cashbox = await this.prisma.cashbox.findFirst({
       where: {
         id: payment.cashbox_id,
@@ -227,8 +184,7 @@ export class HumoProcessingService {
         tk: 'tk_' + tk,
       },
     });
-    const clientId = details['stip_client_id'];
-    const { cardholderName } = await this.getFullnameByCardholderId(clientId);
+    const { nameOnCard } = await this.getDataByPan(pan);
     await this.prisma.payment.update({
       where: {
         id: payment.id,
@@ -247,7 +203,7 @@ export class HumoProcessingService {
       IpAddress: payment.ip_address,
       CardFirstSix: pan.substring(0, 6),
       CardLastFour: pan.slice(-4),
-      CardHolderName: cardholderName,
+      CardHolderName: nameOnCard,
       CardToken: cardInfo.tk,
       Processing: CardType.HUMO,
       Expiry: expiry,
