@@ -6,7 +6,7 @@ export class AntifraudService {
   private transactionFrequencyLimit: number;
   private maxTransactionAmount: number;
   constructor(private readonly prisma: PrismaService) {
-    this.transactionFrequencyLimit = 5; // Максимальное количество транзакций в час
+    this.transactionFrequencyLimit = 5000; // Максимальное количество транзакций в час
     this.maxTransactionAmount = 10000; // Максимальная сумма транзакции
   }
 

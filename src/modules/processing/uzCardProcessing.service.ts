@@ -68,26 +68,18 @@ export class UzCardProcessingService {
       },
     };
 
-    try {
-      const response = await axios.post(this.uzCardUrl, requestData, {
-        auth: {
-          username: this.uzCardLogin,
-          password: this.uzCardPassword,
-        },
-      });
-      if (!response.data || !response.data.result) {
-        throw new NotAcceptableException('Wrong credentials');
-      }
-      const otpId = response.data.result.id;
-      const phone = response.data.result.phoneMask;
-      return { otpId, phone };
-    } catch (error) {
-      const errMsg =
-        'Error in sendOTPRequest: ' + error.message ||
-        error.response.data.message;
-      console.error(errMsg);
-      throw new Error(errMsg);
+    const response = await axios.post(this.uzCardUrl, requestData, {
+      auth: {
+        username: this.uzCardLogin,
+        password: this.uzCardPassword,
+      },
+    });
+    if (!response.data || !response.data.result) {
+      throw new NotAcceptableException('Send otp: Wrong credentials');
     }
+    const otpId = response.data.result.id;
+    const phone = response.data.result.phoneMask;
+    return { otpId, phone };
   }
 
   async validate(otpId: number, smsCode: number): Promise<IValidate> {
