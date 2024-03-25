@@ -3,7 +3,6 @@ import { SendSmsWithPlayMobile } from 'src/common/utils/smsSender.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { ISendOtp } from './interfaces/sendOtpResponse.interface';
 import {
-  BadRequestException,
   Inject,
   NotAcceptableException,
   NotFoundException,
@@ -13,6 +12,7 @@ import { CardType } from 'src/common/enum/cardType.enum';
 import { payment } from '@prisma/client';
 import { DecryptService } from '../decrypt/decrypt.service';
 import * as soap from 'soap';
+import * as parser from 'xml2json';
 interface IGetDataByPan {
   phone: string;
   nameOnCard: string;
@@ -284,55 +284,15 @@ export class HumoProcessingService {
           password: this.humoSoapPassword,
         },
       });
-      console.log(jsonData);
+      const json = await parser.toJson(jsonData.data);
+      console.log('JSON', json);
 
-      // const data = {
-      //   language: 'en',
-      //   billerRef: 'SOAP_DMS',
-      //   payinstrRef: 'SOAP_DMS',
-      //   sessionID: 'SOAP_DMS_20220106090000', //сюда генерить random uuid?
-      //   paymentRef: payment.id,
-      //   details: {
-      //     item: [
-      //       { name: 'pan', value: pan },
-      //       { name: 'expiry', value: expiry },
-      //       { name: 'ccy_code', value: '860' },
-      //       { name: 'amount', value: payment.amount },
-      //       { name: 'merchant_id', value: epos.merchant_id },
-      //       { name: 'terminal_id', value: epos.terminal_id },
-      //       { name: 'point_code', value: this.humoSoapPointCode },
-      //       { name: 'centre_id', value: this.humoSoapCenterId },
-      //     ],
-      //   },
-      //   paymentOriginator: this.humoSoapUsername,
-      // };
-      // const client = await soap.createClientAsync(this.humoSoapUrl, {
-      //   wsdl_options: {
-      //     method: 'POST',
-      //     overrides: {
-      //       ebppif1: 'urn:PaymentServer',
-      //     },
-      //     data,
-      //   },
-      // });
-      // client.setSecurity(
-      //   new soap.BasicAuthSecurity(
-      //     this.humoSoapUsername,
-      //     this.humoSoapPassword,
-      //   ),
-      // );
-      // const response = await client.PaymentAsync(data);
-      // const jsonData = response[0];
-      // if (jsonData.action != 4) {
-      //   throw new BadRequestException('Error holding payment');
-      // }
       return {
         paymentIdFromHumo: jsonData.paymentID,
         paymentRefFromHumo: jsonData.paymentRef,
       };
     } catch (error) {
       console.log(error);
-
       console.log('Error hold request humo: ' + error.message);
       throw new Error('Error hold request humo');
     }
