@@ -283,19 +283,14 @@ export class HumoProcessingService {
         password: this.humoSoapPassword,
       },
     });
-    console.log('jsonData.data: ', jsonData.data);
-    const jsonfromXml = await parser.toJson(jsonData.data);
-    console.log('jsonfromXml: ', jsonfromXml);
-    console.log(
-      'jsonfromXml SOAP-ENV:Envelope: ',
-      jsonfromXml['SOAP-ENV:Envelope'],
-    );
-    console.log('jsonfromXml Envelope: ', jsonfromXml['Envelope']);
-
-    const json = jsonfromXml['Envelope']['Body']['ebppif1:PaymentResponse'];
-    const paymentID = json['paymentID'];
-    const paymentRef = json['paymentRef'];
-    const action = json['action'];
+    const jsonfromXml = parser.toJson(jsonData.data);
+    const json =
+      JSON.parse(jsonfromXml)['SOAP-ENV:Envelope']['SOAP-ENV:Body'][
+        'ebppif1:PaymentResponse'
+      ];
+    const paymentID = json.paymentID;
+    const paymentRef = json.paymentRef;
+    const action = json.action;
     if (action != 4) {
       throw new BadRequestException(
         'Fail. Check your credentials and try again',
@@ -335,6 +330,7 @@ export class HumoProcessingService {
           password: this.humoSoapPassword,
         },
       });
+      return;
     } catch (error) {
       console.log('Error confirming payment ' + error.message);
       throw new Error('Error confirming payment ');
