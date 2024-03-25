@@ -45,9 +45,11 @@ export class PaymentsController {
 
   @Post('cards/post3ds')
   async post3ds(@Body() dto: Handle3dsPostDto) {
-    console.log('post3ds dto: ', dto);
     const response = await this.paymentsService.handle3DSPost(dto);
-    console.log('post3ds response: ', response);
+    const cardExp =
+      response.CardExpDate.substring(2) +
+      '/' +
+      response.CardExpDate.substring(0, 2);
     const mockedResponse = {
       Model: {
         ReasonCode: 0, // отправляем ошибку
@@ -76,7 +78,7 @@ export class PaymentsController {
         ConfirmDate: null,
         ConfirmDateIso: null,
         AuthCode: null,
-        TestMode: true,
+        TestMode: false,
         Rrn: null,
         OriginalTransactionId: null,
         FallBackScenarioDeclinedTransactionId: null,
@@ -89,7 +91,7 @@ export class PaymentsController {
         IpLongitude: 0,
         CardFirstSix: response.CardFirstSix,
         CardLastFour: response.CardLastFour,
-        CardExpDate: '01/27',
+        CardExpDate: cardExp,
         CardType: response.CardType,
         CardProduct: null,
         CardCategory: 'Не определен ()',
@@ -100,7 +102,7 @@ export class PaymentsController {
         Status: response.Status,
         StatusCode: 5,
         CultureName: 'uz',
-        Reason: 'Approved',
+        Reason: response.Reason || null,
         CardHolderMessage: 'Insufficient funds',
         Type: 0,
         Refunded: false,
@@ -121,7 +123,7 @@ export class PaymentsController {
       Message: null,
       ErrorCode: null,
     };
-    console.log('post3ds mockedResponse: ', mockedResponse);
+    console.log('mockedResponse: ', mockedResponse);
 
     return mockedResponse;
   }
