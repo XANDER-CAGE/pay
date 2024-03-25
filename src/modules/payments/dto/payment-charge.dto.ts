@@ -6,7 +6,6 @@ import {
   IsOptional,
   IsPhoneNumber,
   IsString,
-  Min,
 } from 'class-validator';
 
 class PayerDto {

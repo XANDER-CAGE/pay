@@ -1,11 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class Handle3dsPostDto {
   @ApiProperty()
-  @IsNumber()
   @IsNotEmpty()
-  TransactionId: number;
+  TransactionId: number | string;
 
   @ApiProperty()
   @IsString()

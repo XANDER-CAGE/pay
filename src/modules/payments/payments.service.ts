@@ -47,7 +47,6 @@ export class PaymentsService {
   ) {}
   async charge(dto: PaymentChargeDto, req: MyReq) {
     console.log('CHARGE DTO:', dto);
-    
     const { decryptedLogin, expiry, pan } =
       this.decryptService.decryptCardCryptogram(dto.CardCryptogramPacket);
     if (req.basicAuthLogin !== decryptedLogin) {
@@ -122,7 +121,7 @@ export class PaymentsService {
 
   async handle3DSPost(dto: Handle3dsPostDto): Promise<IHandle3dsPost> {
     const payment = await this.prisma.payment.findFirst({
-      where: { id: dto.TransactionId },
+      where: { id: +dto.TransactionId },
     });
     if (!payment) {
       throw new NotFoundException('Transaction not found.');
