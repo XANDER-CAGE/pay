@@ -64,7 +64,6 @@ export class PaymentChargeDto {
   @ApiProperty()
   @IsNotEmpty()
   @IsInt()
-  @Min(1000)
   Amount: number;
 
   @ApiProperty()
