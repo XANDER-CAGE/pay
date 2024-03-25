@@ -45,8 +45,9 @@ export class PaymentsController {
 
   @Post('cards/post3ds')
   async post3ds(@Body() dto: Handle3dsPostDto) {
-    console.log(dto);
+    console.log('post3ds dto: ', dto);
     const response = await this.paymentsService.handle3DSPost(dto);
+    console.log('post3ds response: ', response);
     const mockedResponse = {
       Model: {
         ReasonCode: 0, // отправляем ошибку
