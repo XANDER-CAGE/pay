@@ -16,7 +16,7 @@ export class ValidateService {
   async validate(dto: ValidateDto) {
     const payment = await this.prisma.payment.findFirst({
       where: {
-        id: dto.md,
+        id: +dto.md,
       },
     });
     if (!payment) {
