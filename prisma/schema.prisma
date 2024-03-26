@@ -132,6 +132,8 @@ model payment {
   id                     Int              @id @default(autoincrement())
   cashbox_id             Int?
   status_code            Int?
+  processing_id          Int?
+  last_amount            Decimal?         @db.Decimal
   refunded               Boolean?
   card_info_id           Int?
   ip_city                String?          @db.VarChar(255)

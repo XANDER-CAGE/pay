@@ -192,6 +192,7 @@ export class HumoProcessingService {
       data: {
         processing: 'humo',
         status: 'Completed',
+        processing_id: +paymentRefFromHumo,
       },
     });
     return {
@@ -335,6 +336,64 @@ export class HumoProcessingService {
       console.log(error);
       console.log('Error confirming payment ' + error.message);
       throw new Error('Error confirming payment ');
+    }
+  }
+
+  async refund(payment: payment) {
+    try {
+      const epos = await this.prisma.epos.findFirst({
+        where: {
+          cashbox_id: payment.cashbox_id,
+          type: 'humo',
+        },
+      });
+      if (!epos) {
+        throw new NotFoundException('EPOS for Humo not found');
+      }
+      const xml = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+      xmlns:urn="urn:PaymentServer">
+      <soapenv:Header/>
+      <soapenv:Body>
+      <urn:ReturnPayment>
+      <paymentRef>${payment.processing_id}</paymentRef>
+      <item>
+      <name>merchant_id</name>
+      <value>${epos.merchant_id}</value>
+      </item>
+      <item>
+      <name>centre_id</name>
+      <value>${this.humoSoapCenterId}</value>
+      </item>
+      <item>
+      <name>terminal_id</name>
+      <value>${epos.terminal_id}</value>
+      </item>
+      <paymentOriginator>${this.humoSoapUsername}</paymentOriginator>
+      </urn:ReturnPayment>
+      </soapenv:Body>
+      </soapenv:Envelope>`;
+
+      await axios.post(this.humoSoapUrl, xml, {
+        headers: {
+          'Content-Type': 'text/xml',
+        },
+        auth: {
+          username: this.humoSoapUsername,
+          password: this.humoSoapPassword,
+        },
+      });
+      await this.prisma.payment.update({
+        where: {
+          id: payment.id,
+        },
+        data: {
+          refunded: true,
+        },
+      });
+      return;
+    } catch (error) {
+      console.log(error);
+      throw new Error('Error refunding payment');
     }
   }
 }

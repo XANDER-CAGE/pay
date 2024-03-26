@@ -186,6 +186,7 @@ export class UzCardProcessingService {
       data: {
         processing: 'uzcard',
         status: failReason ? 'Declined' : 'Completed',
+        processing_id: +response.data?.refNum || null,
       },
     });
     return {
@@ -201,5 +202,48 @@ export class UzCardProcessingService {
       Expiry: expiry,
       Success: failReason ? false : true,
     };
+  }
+
+  async refund(payment: payment) {
+    try {
+      const epos = await this.prisma.epos.findFirst({
+        where: {
+          cashbox_id: payment.cashbox_id,
+          type: 'uzcard',
+        },
+      });
+      if (!epos) {
+        throw new NotFoundException('EPOS for uzcard not found');
+      }
+      const requestData = {
+        jsonrpc: '2.0',
+        method: 'trans.reverse',
+        id: 123,
+        params: {
+          tranId: payment.processing_id,
+        },
+      };
+      const { data } = await axios.post(this.uzCardUrl, requestData, {
+        auth: {
+          username: this.uzCardLogin,
+          password: this.uzCardPassword,
+        },
+      });
+      if (data.result[0]?.status != 'OK' || data.result[0]?.status != 'ROK') {
+        throw new Error('Something went wrong: ' + data.result[0]?.respText);
+      }
+      await this.prisma.payment.update({
+        where: {
+          id: payment.id,
+        },
+        data: {
+          refunded: true,
+        },
+      });
+      return { success: true };
+    } catch (error) {
+      console.log(error);
+      throw new Error('Error refunding');
+    }
   }
 }

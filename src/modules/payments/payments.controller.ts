@@ -18,6 +18,7 @@ import { PaymentChargeDto } from './dto/payment-charge.dto';
 import { MyReq } from 'src/common/interfaces/myReq.interface';
 import { AntifraudService } from './antifraud.service';
 import { Handle3dsPostDto } from './dto/handle3dsPost.dto';
+import { RefundDto } from './dto/refund.dto';
 
 @ApiTags('Payments')
 @Controller('payments')
@@ -146,5 +147,10 @@ export class PaymentsController {
         'Ошибка при чтении файла: ' + err.message,
       );
     }
+  }
+
+  @Post('refund')
+  async refund(@Body() dto: RefundDto) {
+    return await this.paymentsService.refund(dto);
   }
 }

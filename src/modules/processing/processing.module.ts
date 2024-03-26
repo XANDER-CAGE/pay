@@ -13,6 +13,7 @@ import { DecryptModule } from '../decrypt/decrypt.module';
     ProcessingService,
     HumoProcessingService,
     UzCardProcessingService,
+    DecryptModule,
     {
       provide: SendSmsWithPlayMobile,
       useClass: SendSmsWithPlayMobile,

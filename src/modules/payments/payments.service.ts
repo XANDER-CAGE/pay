@@ -11,6 +11,7 @@ import { ProcessingService } from '../processing/processing.service';
 import { DecryptService } from '../decrypt/decrypt.service';
 import { Handle3dsPostDto } from './dto/handle3dsPost.dto';
 import { CardType } from 'src/common/enum/cardType.enum';
+import { RefundDto } from './dto/refund.dto';
 
 interface IHandle3dsPost {
   Amount: number;
@@ -157,6 +158,17 @@ export class PaymentsService {
       IpRegion: payment.ip_region,
       CardExpDate: expiry,
       CardType: success.Processing,
+    };
+  }
+
+  async refund(dto: RefundDto) {
+    await this.processingService.refund(+dto.TransactionId);
+    return {
+      Model: {
+        TransactionId: dto.TransactionId,
+      },
+      Success: true,
+      Message: null,
     };
   }
 }

@@ -1,10 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotAcceptableException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { HumoProcessingService } from './humoProcessing.service';
 import { ISendOtp } from './interfaces/sendOtpResponse.interface';
 import { payment, processing_enum } from '@prisma/client';
 import { UzCardProcessingService } from './uzCardProcessing.service';
 import { CardType } from 'src/common/enum/cardType.enum';
+import { DecryptService } from '../decrypt/decrypt.service';
 
 interface IDetermineProcessing {
   bankName: string;
@@ -47,6 +52,7 @@ export class ProcessingService {
     private readonly prisma: PrismaService,
     private readonly humoService: HumoProcessingService,
     private readonly uzCardService: UzCardProcessingService,
+    private readonly decryptService: DecryptService,
   ) {}
 
   private async determine(pan: string): Promise<IDetermineProcessing> {
@@ -111,5 +117,28 @@ export class ProcessingService {
     }
     data.BankName = bankName;
     return data;
+  }
+
+  async refund(transactionId: number) {
+    const payment = await this.prisma.payment.findFirst({
+      where: {
+        id: transactionId,
+      },
+    });
+    if (!payment) {
+      throw new NotFoundException('Transactions not found');
+    }
+    const { pan } = this.decryptService.decryptCardCryptogram(
+      payment.card_cryptogram_packet,
+    );
+    if (payment.status != 'Completed') {
+      throw new NotAcceptableException('Transaction not completed');
+    }
+    const { processing } = await this.determine(pan);
+    if (processing == 'humo') {
+      await this.humoService.refund(payment);
+    } else if (processing == 'uzcard') {
+      await this.uzCardService.refund(payment);
+    }
   }
 }
