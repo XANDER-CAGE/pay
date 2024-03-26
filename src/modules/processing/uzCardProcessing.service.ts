@@ -170,6 +170,7 @@ export class UzCardProcessingService {
         tk: 'tk_' + tk,
       },
     });
+    const width = +payment.amount * 100;
     const requestData = {
       id: 1,
       jsonrpc: '2.0',
@@ -179,7 +180,7 @@ export class UzCardProcessingService {
           purpose: 'payment',
           receiverId: company.account_id, // Эти данные нужно определить или получить
           cardId: cardInfo.processing_id, // Используем cardId из данных платежа
-          amount: payment.amount, // Используем сумму платежа
+          amount: width, // Используем сумму платежа
           comission: 0,
           //commission: cashbox.commission, // Указываем комиссию, если она известна
           currency: '860', // Валюта платежа
@@ -295,6 +296,9 @@ export class UzCardProcessingService {
     const { pan, expiry } = this.decryptService.decryptCardCryptogram(
       cardInfo.card_cryptogram_packet,
     );
+   
+    const width = +dto.Amount * 100;
+
     const requestData = {
       id: 1,
       jsonrpc: '2.0',
@@ -304,7 +308,7 @@ export class UzCardProcessingService {
           purpose: 'payment',
           receiverId: company.account_id, // Эти данные нужно определить или получить
           cardId: cardInfo.processing_id, // Используем cardId из данных платежа
-          amount: dto.Amount, // Используем сумму платежа
+          amount: width, // Используем сумму платежа
           comission: 0,
           //commission: cashbox.commission, // Указываем комиссию, если она известна
           currency: '860', // Валюта платежа

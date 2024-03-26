@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty } from 'class-validator';
+import { IsOptional } from 'class-validator';
 
 export class PayByTokenDto {
   @ApiProperty()
@@ -15,7 +16,7 @@ export class PayByTokenDto {
   InvoiceId: string | number;
 
   @ApiProperty()
-  @IsNotEmpty()
+  @IsOptional()
   Description: string;
 
   @ApiProperty()
