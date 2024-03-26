@@ -220,7 +220,7 @@ export class UzCardProcessingService {
         method: 'trans.reverse',
         id: 123,
         params: {
-          tranId: payment.processing_id,
+          tranId: String(payment.processing_id),
         },
       };
       const { data } = await axios.post(this.uzCardUrl, requestData, {

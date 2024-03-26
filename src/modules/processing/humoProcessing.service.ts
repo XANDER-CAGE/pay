@@ -355,7 +355,7 @@ export class HumoProcessingService {
       <soapenv:Header/>
       <soapenv:Body>
       <urn:ReturnPayment>
-      <paymentRef>${payment.processing_id}</paymentRef>
+      <paymentRef>${String(payment.processing_id)}</paymentRef>
       <item>
       <name>merchant_id</name>
       <value>${epos.merchant_id}</value>
