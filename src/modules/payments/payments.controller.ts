@@ -32,16 +32,16 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   @Post('cards/charge')
   async charge(@Body() dto: PaymentChargeDto, @Req() req: MyReq) {
-    const isFraud = await this.antiFraudservice.checkForFraud(
-      req.ip,
-      dto.Amount,
-    );
-    if (isFraud) {
-      throw new HttpException(
-        "'Suspicious transaction detected. Payment declined.",
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
+    // const isFraud = await this.antiFraudservice.checkForFraud(
+    //   req.ip,
+    //   dto.Amount,
+    // );
+    // if (isFraud) {
+    //   throw new HttpException(
+    //     "'Suspicious transaction detected. Payment declined.",
+    //     HttpStatus.TOO_MANY_REQUESTS,
+    //   );
+    // }
     return this.paymentsService.charge(dto, req);
   }
 
