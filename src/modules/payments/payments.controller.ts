@@ -155,6 +155,7 @@ export class PaymentsController {
     return await this.paymentsService.refund(dto);
   }
 
+  @UseGuards(AuthGuard)
   @Post('tokens/charge')
   async payByToken(@Body() dto: PayByTokenDto, @Req() req: MyReq) {
     const response = await this.paymentsService.payByToken(dto, req);
