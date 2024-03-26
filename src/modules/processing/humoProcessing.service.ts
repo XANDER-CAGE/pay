@@ -13,6 +13,8 @@ import { CardType } from 'src/common/enum/cardType.enum';
 import { payment } from '@prisma/client';
 import { DecryptService } from '../decrypt/decrypt.service';
 import * as parser from 'xml2json';
+import { PayByTokenDto } from '../payments/dto/payByToken.dto';
+import { MyReq } from 'src/common/interfaces/myReq.interface';
 interface IGetDataByPan {
   phone: string;
   nameOnCard: string;
@@ -31,6 +33,23 @@ interface IHoldRequest {
   paymentRefFromHumo: string | number;
 }
 interface IHandle3dsPost {
+  Currency: string;
+  PublicId: string;
+  AccountId: string;
+  TransactionId: number;
+  InvoiceId: string;
+  IpAddress: string;
+  CardFirstSix: string;
+  CardLastFour: string;
+  CardHolderName: string;
+  CardToken: string;
+  Processing: CardType;
+  Expiry: string;
+  Success: boolean;
+  Status: 'Declined' | 'Completed';
+}
+
+interface IPayByToken {
   Currency: string;
   PublicId: string;
   AccountId: string;
@@ -395,5 +414,70 @@ export class HumoProcessingService {
       console.log(error);
       throw new Error('Error refunding payment');
     }
+  }
+
+  async payByToken(dto: PayByTokenDto, req: MyReq): Promise<IPayByToken> {
+    const cardInfo = await this.prisma.card_info.findFirst({
+      where: {
+        tk: dto.Token,
+      },
+    });
+    const payment = await this.prisma.payment.create({
+      data: {
+        amount: dto.Amount,
+        currency: dto.Currency,
+        invoice_id: String(dto.InvoiceId),
+        account_id: String(dto.AccountId),
+        description: dto.Description,
+        cashbox_id: req.cashboxId,
+        ip_address: req.ip,
+        card_cryptogram_packet: cardInfo.card_cryptogram_packet,
+      },
+    });
+    const cashbox = await this.prisma.cashbox.findFirst({
+      where: {
+        id: payment.cashbox_id,
+      },
+      include: {
+        company: {
+          select: {
+            account_id: true,
+          },
+        },
+      },
+    });
+    const { paymentIdFromHumo, paymentRefFromHumo } =
+      await this.holdRequest(payment);
+    await this.confirmPaymentHumo(paymentIdFromHumo, paymentRefFromHumo);
+    const { pan, expiry } = this.decrypService.decryptCardCryptogram(
+      payment.card_cryptogram_packet,
+    );
+    const { nameOnCard } = await this.getDataByPan(pan);
+    await this.prisma.payment.update({
+      where: {
+        id: payment.id,
+      },
+      data: {
+        processing: 'humo',
+        status: 'Completed',
+        processing_id: String(paymentRefFromHumo),
+      },
+    });
+    return {
+      Currency: payment.currency,
+      PublicId: cashbox.public_id,
+      AccountId: cashbox.company.account_id,
+      TransactionId: payment.id,
+      InvoiceId: payment.invoice_id,
+      IpAddress: payment.ip_address,
+      CardFirstSix: pan.substring(0, 6),
+      CardLastFour: pan.slice(-4),
+      CardHolderName: nameOnCard,
+      CardToken: cardInfo.tk,
+      Processing: CardType.HUMO,
+      Expiry: expiry,
+      Success: true,
+      Status: 'Completed',
+    };
   }
 }

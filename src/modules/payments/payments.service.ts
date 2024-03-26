@@ -12,6 +12,7 @@ import { DecryptService } from '../decrypt/decrypt.service';
 import { Handle3dsPostDto } from './dto/handle3dsPost.dto';
 import { CardType } from 'src/common/enum/cardType.enum';
 import { RefundDto } from './dto/refund.dto';
+import { PayByTokenDto } from './dto/payByToken.dto';
 
 interface IHandle3dsPost {
   Amount: number;
@@ -36,6 +37,28 @@ interface IHandle3dsPost {
   CardType: CardType;
   IpCity: string;
   IpRegion: string;
+}
+
+interface IPayByToken {
+  Amount: number;
+  Currency: string;
+  PublicId: string;
+  AccountId: string;
+  TransactionId: number;
+  InvoiceId: string;
+  IpAddress: string;
+  CardFirstSix: string;
+  CardLastFour: string;
+  CreatedDate: number;
+  CreatedDateIso: string;
+  CardHolderName: string;
+  CardToken: string;
+  Status: string;
+  Success: boolean;
+  BankName?: string;
+  Reason?: string | null;
+  CardExpDate: string;
+  CardType: CardType;
 }
 
 @Injectable()
@@ -169,6 +192,33 @@ export class PaymentsService {
       },
       Success: true,
       Message: null,
+    };
+  }
+
+  async payByToken(dto: PayByTokenDto, req: MyReq): Promise<IPayByToken> {
+    const data = await this.processingService.payByCard(dto, req);
+    const cardExp =
+      data.Expiry.substring(2) + '/' + data.Expiry.substring(0, 2);
+    return {
+      AccountId: data.AccountId,
+      Amount: +dto.Amount,
+      CardExpDate: cardExp,
+      CardFirstSix: data.CardFirstSix,
+      CardHolderName: data.CardHolderName,
+      CardLastFour: data.CardLastFour,
+      CardToken: dto.Token,
+      CardType: data.Processing,
+      Currency: dto.Currency,
+      InvoiceId: String(dto.InvoiceId),
+      IpAddress: req.ip,
+      Success: data.Success,
+      Status: data.Status,
+      PublicId: data.PublicId,
+      BankName: data.BankName,
+      TransactionId: data.TransactionId,
+      Reason: data.Reason,
+      CreatedDate: Date.now(),
+      CreatedDateIso: new Date().toISOString(),
     };
   }
 }

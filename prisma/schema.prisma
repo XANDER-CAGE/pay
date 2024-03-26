@@ -21,26 +21,27 @@ model bin {
 }
 
 model card_info {
-  id              Int              @id @default(autoincrement())
-  cashbox_id      Int?
-  processing_id   String?          @unique @db.VarChar(255)
-  pan             String?          @db.VarChar(255)
-  expiry          String?          @db.VarChar(255)
-  status          Int?
-  phone           String?          @db.VarChar(255)
-  fullname        String?          @db.VarChar(255)
-  sms             Boolean?
-  pincnt          Int?
-  card_type       processing_enum?
-  hold_amount     Int?
-  cashback_amount Int?
-  aacct           String?          @db.VarChar(255)
-  tk              String?          @db.VarChar(255)
-  par             String?          @db.VarChar(255)
-  created_at      DateTime?        @default(now()) @db.Date
-  updated_at      DateTime?        @default(now()) @db.Date
-  cashbox         cashbox?         @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  payment         payment[]
+  id                     Int              @id @default(autoincrement())
+  cashbox_id             Int?
+  processing_id          String?          @unique @db.VarChar(255)
+  pan                    String?          @db.VarChar(255)
+  card_cryptogram_packet String?
+  expiry                 String?          @db.VarChar(255)
+  status                 Int?
+  phone                  String?          @db.VarChar(255)
+  fullname               String?          @db.VarChar(255)
+  sms                    Boolean?
+  pincnt                 Int?
+  card_type              processing_enum?
+  hold_amount            Int?
+  cashback_amount        Int?
+  aacct                  String?          @db.VarChar(255)
+  tk                     String?          @db.VarChar(255)
+  par                    String?          @db.VarChar(255)
+  created_at             DateTime?        @default(now()) @db.Date
+  updated_at             DateTime?        @default(now()) @db.Date
+  cashbox                cashbox?         @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  payment                payment[]
 }
 
 model cashbox {
@@ -132,7 +133,7 @@ model payment {
   id                     Int              @id @default(autoincrement())
   cashbox_id             Int?
   status_code            Int?
-  processing_id          String?
+  processing_id          String?          @db.VarChar(255)
   last_amount            Decimal?         @db.Decimal
   refunded               Boolean?
   card_info_id           Int?
@@ -147,7 +148,7 @@ model payment {
   description            String?          @db.VarChar(255)
   account_id             String?          @db.VarChar(255)
   name                   String?          @db.VarChar(255)
-  card_cryptogram_packet String
+  card_cryptogram_packet String?
   status                 String           @default("Pending") @db.VarChar(255)
   created_at             DateTime?        @default(now()) @db.Date
   updated_at             DateTime?        @default(now()) @db.Date

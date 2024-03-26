@@ -10,6 +10,8 @@ import { payment } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { DecryptService } from '../decrypt/decrypt.service';
 import * as crypto from 'crypto';
+import { PayByTokenDto } from '../payments/dto/payByToken.dto';
+import { MyReq } from 'src/common/interfaces/myReq.interface';
 
 interface IValidate {
   processingId: string | number;
@@ -39,6 +41,21 @@ interface IHandle3dsPost {
   Processing: CardType;
   Expiry: string;
   Success: boolean;
+}
+
+interface IPayByToken {
+  PublicId: string;
+  AccountId: string;
+  CardFirstSix: string;
+  CardLastFour: string;
+  CardHolderName: string;
+  CardToken: string;
+  Status: 'Declined' | 'Completed';
+  Reason: string | null;
+  Processing: CardType;
+  Expiry: string;
+  Success: boolean;
+  TransactionId: number;
 }
 
 @Injectable()
@@ -229,7 +246,7 @@ export class UzCardProcessingService {
           password: this.uzCardPassword,
         },
       });
-      if (data.result[0]?.status != 'OK' || data.result[0]?.status != 'ROK') {
+      if (data.result[0]?.status == 'RER') {
         throw new Error('Something went wrong: ' + data.result[0]?.respText);
       }
       await this.prisma.payment.update({
@@ -245,5 +262,93 @@ export class UzCardProcessingService {
       console.log(error);
       throw new Error('Error refunding');
     }
+  }
+
+  async payByToken(dto: PayByTokenDto, req: MyReq): Promise<IPayByToken> {
+    const epos = await this.prisma.epos.findFirst({
+      where: {
+        cashbox_id: req.cashboxId,
+        type: 'uzcard',
+      },
+    });
+    if (!epos) {
+      throw new NotFoundException('EPOS for Uzcard not found');
+    }
+    const cashbox = await this.prisma.cashbox.findFirst({
+      where: {
+        id: req.cashboxId,
+      },
+    });
+    const company = await this.prisma.company.findFirst({
+      where: {
+        id: cashbox.companyId,
+      },
+    });
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+    const cardInfo = await this.prisma.card_info.findFirst({
+      where: {
+        tk: dto.Token,
+      },
+    });
+    const { pan, expiry } = this.decryptService.decryptCardCryptogram(
+      cardInfo.card_cryptogram_packet,
+    );
+    const requestData = {
+      id: 1,
+      jsonrpc: '2.0',
+      method: 'trans.pay.purpose',
+      params: {
+        tran: {
+          purpose: 'payment',
+          receiverId: company.account_id, // Эти данные нужно определить или получить
+          cardId: cardInfo.processing_id, // Используем cardId из данных платежа
+          amount: dto.Amount, // Используем сумму платежа
+          comission: 0,
+          //commission: cashbox.commission, // Указываем комиссию, если она известна
+          currency: '860', // Валюта платежа
+          ext: dto.InvoiceId, // Дополнительная информация, если нужна
+          merchantId: epos.merchant_id, // ID мерчанта, если известен
+          terminalId: epos.terminal_id, // ID терминала, если известен
+        },
+      },
+    };
+    const response = await axios.post(this.uzCardUrl, requestData, {
+      auth: {
+        username: this.uzCardLogin,
+        password: this.uzCardPassword,
+      },
+    });
+    const failReason = response.data?.error?.message;
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        invoice_id: String(dto.InvoiceId),
+        account_id: String(dto.AccountId),
+        amount: dto.Amount,
+        currency: dto.Currency,
+        description: dto.Description,
+        cashbox_id: req.cashboxId,
+        status: failReason ? 'Declined' : 'Completed',
+        processing_id: String(response.data?.result?.refNum) || null,
+        processing: 'uzcard',
+        ip_address: req.ip,
+      },
+    });
+    return {
+      PublicId: cashbox.public_id,
+      AccountId: company.account_id,
+      CardFirstSix: pan.substring(0, 6),
+      CardLastFour: pan.slice(-4),
+      CardHolderName: cardInfo.fullname,
+      CardToken: cardInfo.tk,
+      Status: failReason ? 'Declined' : 'Completed',
+      Reason: failReason || null,
+      Processing: CardType.UZCARD,
+      Expiry: expiry,
+      Success: failReason ? false : true,
+      TransactionId: payment.id,
+    };
   }
 }
