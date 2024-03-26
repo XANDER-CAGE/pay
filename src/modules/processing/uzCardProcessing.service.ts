@@ -186,7 +186,7 @@ export class UzCardProcessingService {
       data: {
         processing: 'uzcard',
         status: failReason ? 'Declined' : 'Completed',
-        processing_id: +response.data?.refNum || null,
+        processing_id: +response.data?.result?.refNum || null,
       },
     });
     return {
