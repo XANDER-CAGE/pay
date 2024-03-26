@@ -192,7 +192,7 @@ export class HumoProcessingService {
       data: {
         processing: 'humo',
         status: 'Completed',
-        processing_id: +paymentRefFromHumo,
+        processing_id: String(paymentRefFromHumo),
       },
     });
     return {

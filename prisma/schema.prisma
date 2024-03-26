@@ -132,7 +132,7 @@ model payment {
   id                     Int              @id @default(autoincrement())
   cashbox_id             Int?
   status_code            Int?
-  processing_id          BigInt?
+  processing_id          String?
   last_amount            Decimal?         @db.Decimal
   refunded               Boolean?
   card_info_id           Int?
