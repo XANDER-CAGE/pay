@@ -163,7 +163,7 @@ export class UzCardProcessingService {
           receiverId: company.account_id, // Эти данные нужно определить или получить
           cardId: cardInfo.processing_id, // Используем cardId из данных платежа
           amount: payment.amount, // Используем сумму платежа
-          comission: '20',
+          comission: 0,
           //commission: cashbox.commission, // Указываем комиссию, если она известна
           currency: '860', // Валюта платежа
           ext: payment.invoice_id, // Дополнительная информация, если нужна
