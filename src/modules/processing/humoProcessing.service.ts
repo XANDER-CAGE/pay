@@ -245,7 +245,7 @@ export class HumoProcessingService {
     const { pan, expiry } = this.decrypService.decryptCardCryptogram(
       payment.card_cryptogram_packet,
     );
-    const amountWidth100 = +payment.amount * 100
+    const amountWidth100 = +payment.amount * 100;
     const xml = `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-
     ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema -
     instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ebppif1="urn:PaymentServer">
@@ -430,6 +430,7 @@ export class HumoProcessingService {
         invoice_id: String(dto.InvoiceId),
         account_id: String(dto.AccountId),
         description: dto.Description,
+        card_info_id: cardInfo.id,
         cashbox_id: req.cashboxId,
         ip_address: req.ip,
         card_cryptogram_packet: cardInfo.card_cryptogram_packet,

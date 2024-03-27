@@ -196,15 +196,22 @@ export class UzCardProcessingService {
         password: this.uzCardPassword,
       },
     });
+    let isError: boolean;
     const failReason = response.data?.error?.message;
+    const statusIsOK = response.data?.result?.status == 'OK';
+    const refNum = response.data?.result?.refNum;
+    const refNumExists = refNum && refNum != '000000000000';
+    if (failReason || !refNumExists || !statusIsOK) {
+      isError = true;
+    }
     await this.prisma.payment.update({
       where: {
         id: payment.id,
       },
       data: {
         processing: 'uzcard',
-        status: failReason ? 'Declined' : 'Completed',
-        processing_id: String(response.data?.result?.refNum) || null,
+        status: isError ? 'Declined' : 'Completed',
+        processing_id: String(response.data?.result?.refNum),
       },
     });
     return {
@@ -214,7 +221,7 @@ export class UzCardProcessingService {
       CardLastFour: pan.slice(-4),
       CardHolderName: cardInfo.fullname,
       CardToken: cardInfo.tk,
-      Status: failReason ? 'Declined' : 'Completed',
+      Status: isError ? 'Declined' : 'Completed',
       Reason: failReason || null,
       Processing: CardType.UZCARD,
       Expiry: expiry,
@@ -296,7 +303,7 @@ export class UzCardProcessingService {
     const { pan, expiry } = this.decryptService.decryptCardCryptogram(
       cardInfo.card_cryptogram_packet,
     );
-   
+
     const width = +dto.Amount * 100;
 
     const requestData = {
@@ -324,18 +331,25 @@ export class UzCardProcessingService {
         password: this.uzCardPassword,
       },
     });
+    let isError: boolean;
     const failReason = response.data?.error?.message;
-
+    const statusIsOK = response.data?.result?.status == 'OK';
+    const refNum = response.data?.result?.refNum;
+    const refNumExists = refNum && refNum != '000000000000';
+    if (failReason || !refNumExists || !statusIsOK) {
+      isError = true;
+    }
     const payment = await this.prisma.payment.create({
       data: {
         invoice_id: String(dto.InvoiceId),
         account_id: String(dto.AccountId),
         amount: dto.Amount,
+        card_info_id: cardInfo.id,
         currency: dto.Currency,
         description: dto.Description,
         cashbox_id: req.cashboxId,
-        status: failReason ? 'Declined' : 'Completed',
-        processing_id: String(response.data?.result?.refNum) || null,
+        status: isError ? 'Declined' : 'Completed',
+        processing_id: String(response.data?.result?.refNum),
         processing: 'uzcard',
         ip_address: req.ip,
       },
@@ -347,11 +361,11 @@ export class UzCardProcessingService {
       CardLastFour: pan.slice(-4),
       CardHolderName: cardInfo.fullname,
       CardToken: cardInfo.tk,
-      Status: failReason ? 'Declined' : 'Completed',
+      Status: isError ? 'Declined' : 'Completed',
       Reason: failReason || null,
       Processing: CardType.UZCARD,
       Expiry: expiry,
-      Success: failReason ? false : true,
+      Success: isError ? false : true,
       TransactionId: payment.id,
     };
   }
