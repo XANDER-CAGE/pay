@@ -225,7 +225,7 @@ export class PaymentsController {
         MasterPass: false,
         InfoShopData: null,
       },
-      Success: response.Success || false,
+      Success: response.Success,
       Message: null,
       ErrorCode: null,
     };
