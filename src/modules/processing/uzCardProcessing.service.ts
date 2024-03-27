@@ -339,6 +339,12 @@ export class UzCardProcessingService {
     if (failReason || !refNumExists || !statusIsOK) {
       isError = true;
     }
+    console.log('isError: ' + isError);
+    console.log('failReason: ' + failReason);
+    console.log('statusIsOK: ' + statusIsOK);
+    console.log('refNum: ' + refNum);
+    console.log('refNumExists: ' + refNumExists);
+
     const payment = await this.prisma.payment.create({
       data: {
         invoice_id: String(dto.InvoiceId),
