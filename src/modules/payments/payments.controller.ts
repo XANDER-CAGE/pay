@@ -20,7 +20,6 @@ import { AntifraudService } from './antifraud.service';
 import { Handle3dsPostDto } from './dto/handle3dsPost.dto';
 import { RefundDto } from './dto/refund.dto';
 import { PayByTokenDto } from './dto/payByToken.dto';
-import axios from 'axios';
 
 @ApiTags('Payments')
 @Controller('payments')
@@ -162,7 +161,7 @@ export class PaymentsController {
     const response = await this.paymentsService.payByToken(dto, req);
     const mockedResponse = {
       Model: {
-        ReasonCode: 0, // отправляем ошибку
+        ReasonCode: response.ReasonCode || 0,
         PublicId: response.PublicId, //username кассы
         TerminalUrl: 'https://pay.dnsc.uz', //url терминала
         TransactionId: response.TransactionId, //id транзы

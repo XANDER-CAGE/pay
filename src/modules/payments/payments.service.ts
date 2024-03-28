@@ -57,6 +57,7 @@ interface IPayByToken {
   Success: boolean;
   BankName?: string;
   Reason?: string | null;
+  ReasonCode?: number | null;
   CardExpDate: string;
   CardType: CardType;
 }
@@ -217,6 +218,7 @@ export class PaymentsService {
       BankName: data.BankName,
       TransactionId: data.TransactionId,
       Reason: data.Reason,
+      ReasonCode: data.ReasonCode,
       CreatedDate: Date.now(),
       CreatedDateIso: new Date().toISOString(),
     };

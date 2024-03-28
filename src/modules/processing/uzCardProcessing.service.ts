@@ -196,7 +196,6 @@ export class UzCardProcessingService {
         password: this.uzCardPassword,
       },
     });
-    console.log('RESPONSE FROM UZCARD 3DS', response);
 
     let isError: boolean;
     const failReason = response.data?.error?.message;
@@ -206,11 +205,7 @@ export class UzCardProcessingService {
     if (failReason || !refNumExists || !statusIsOK) {
       isError = true;
     }
-    console.log('isError: ' + isError);
-    console.log('failReason: ' + failReason);
-    console.log('statusIsOK: ' + statusIsOK);
-    console.log('refNum: ' + refNum);
-    console.log('refNumExists: ' + refNumExists);
+
     await this.prisma.payment.update({
       where: {
         id: payment.id,
@@ -338,7 +333,6 @@ export class UzCardProcessingService {
         password: this.uzCardPassword,
       },
     });
-    console.log('RESPONSE FROM UZCARD PAY BY TOKEN', response);
 
     let isError: boolean;
     const failReason = response.data?.error?.message;
@@ -348,11 +342,6 @@ export class UzCardProcessingService {
     if (failReason || !refNumExists || !statusIsOK) {
       isError = true;
     }
-    console.log('isError: ' + isError);
-    console.log('failReason: ' + failReason);
-    console.log('statusIsOK: ' + statusIsOK);
-    console.log('refNum: ' + refNum);
-    console.log('refNumExists: ' + refNumExists);
 
     const payment = await this.prisma.payment.create({
       data: {
@@ -367,6 +356,7 @@ export class UzCardProcessingService {
         processing_id: String(response.data?.result?.refNum),
         processing: 'uzcard',
         ip_address: req.ip,
+        card_cryptogram_packet: cardInfo.card_cryptogram_packet,
       },
     });
     return {

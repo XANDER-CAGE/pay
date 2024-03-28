@@ -1,6 +1,4 @@
 import {
-  HttpException,
-  HttpStatus,
   Injectable,
   NotAcceptableException,
   NotFoundException,
@@ -59,7 +57,8 @@ interface IPayByToken {
   CardToken: string;
   Status: 'Declined' | 'Completed';
   Reason?: string | null;
-  Processing: CardType;
+  ReasonCode?: number | null;
+  Processing: CardType | null;
   Expiry: string;
   Success: boolean;
   BankName?: string;
@@ -169,14 +168,22 @@ export class ProcessingService {
       },
     });
     if (!cardInfo) {
-      throw new HttpException(
-        {
-          code: 5015,
-          error: 'card not found',
-          message: 'Эмитент не найден',
-        },
-        HttpStatus.OK,
-      );
+      return {
+        PublicId: null,
+        AccountId: null,
+        CardFirstSix: null,
+        CardLastFour: null,
+        CardHolderName: null,
+        CardToken: dto.Token,
+        Status: 'Declined',
+        Reason: 'No Such Issuer',
+        ReasonCode: 5015,
+        Processing: null,
+        Expiry: '',
+        Success: false,
+        BankName: '',
+        TransactionId: 0,
+      };
     }
     const { pan } = this.decryptService.decryptCardCryptogram(
       cardInfo.card_cryptogram_packet,

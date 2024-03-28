@@ -304,6 +304,7 @@ export class HumoProcessingService {
         password: this.humoSoapPassword,
       },
     });
+    console.log('RESPONSE FROM HOLD REQUEST HUMO: ', jsonData);
     const jsonfromXml = parser.toJson(jsonData.data);
     const json =
       JSON.parse(jsonfromXml)['SOAP-ENV:Envelope']['SOAP-ENV:Body'][
@@ -312,6 +313,7 @@ export class HumoProcessingService {
     const paymentID = json.paymentID;
     const paymentRef = json.paymentRef;
     const action = json.action;
+
     if (action != 4) {
       throw new BadRequestException(
         'Fail. Check your credentials and try again',
@@ -342,7 +344,7 @@ export class HumoProcessingService {
       </SOAP-ENV:Body>
       </SOAP-ENV:Envelope>`;
 
-      await axios.post(this.humoSoapUrl, xml, {
+      const response = await axios.post(this.humoSoapUrl, xml, {
         headers: {
           'Content-Type': 'text/xml',
         },
@@ -351,6 +353,8 @@ export class HumoProcessingService {
           password: this.humoSoapPassword,
         },
       });
+      console.log('HUMO CONFIRM PAYMENT RESPONSE: ', response.data);
+
       return;
     } catch (error) {
       console.log(error);
