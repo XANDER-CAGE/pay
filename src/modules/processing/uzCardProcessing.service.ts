@@ -384,4 +384,22 @@ export class UzCardProcessingService {
       TransactionId: payment.id,
     };
   }
+
+  async getDataByInvoiceId(invoiceId: string) {
+    const requestData = {
+      jsonrpc: '2.0',
+      method: 'trans.ext',
+      id: 123,
+      params: {
+        extId: invoiceId,
+      },
+    };
+    const response = await axios.post(this.uzCardUrl, requestData, {
+      auth: {
+        username: this.uzCardLogin,
+        password: this.uzCardPassword,
+      },
+    });
+    return response.data;
+  }
 }

@@ -20,6 +20,7 @@ import { AntifraudService } from './antifraud.service';
 import { Handle3dsPostDto } from './dto/handle3dsPost.dto';
 import { RefundDto } from './dto/refund.dto';
 import { PayByTokenDto } from './dto/payByToken.dto';
+import axios from 'axios';
 
 @ApiTags('Payments')
 @Controller('payments')
@@ -232,5 +233,10 @@ export class PaymentsController {
     console.log('mockedResponse: ', mockedResponse);
 
     return mockedResponse;
+  }
+
+  @Post('invoice')
+  async invoice(@Body('invoiceId') invoiceId: string) {
+    return await this.paymentsService.getDataByByInvoiceId(invoiceId);
   }
 }

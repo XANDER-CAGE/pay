@@ -1,4 +1,6 @@
 import {
+  HttpException,
+  HttpStatus,
   Injectable,
   NotAcceptableException,
   NotFoundException,
@@ -167,7 +169,14 @@ export class ProcessingService {
       },
     });
     if (!cardInfo) {
-      throw new NotFoundException('Card not found');
+      throw new HttpException(
+        {
+          code: 5015,
+          error: 'card not found',
+          message: 'Эмитент не найден',
+        },
+        HttpStatus.OK,
+      );
     }
     const { pan } = this.decryptService.decryptCardCryptogram(
       cardInfo.card_cryptogram_packet,
@@ -183,5 +192,9 @@ export class ProcessingService {
     data.CardFirstSix = pan.substring(0, 6);
     data.CardLastFour = pan.slice(-4);
     return data;
+  }
+
+  async getDataByInvoiceId(invoiceId: string) {
+    return await this.uzCardService.getDataByInvoiceId(invoiceId);
   }
 }

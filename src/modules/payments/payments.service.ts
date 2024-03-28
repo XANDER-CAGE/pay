@@ -221,4 +221,8 @@ export class PaymentsService {
       CreatedDateIso: new Date().toISOString(),
     };
   }
+
+  async getDataByByInvoiceId(invoiceId: string) {
+    return await this.processingService.getDataByInvoiceId(invoiceId);
+  }
 }
