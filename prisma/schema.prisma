@@ -16,8 +16,8 @@ model bin {
   hide_cvv_input Boolean
   card_type      processing_enum?
   country_code   Int?
-  created_at     DateTime?        @default(now()) @db.Date
-  updated_at     DateTime?        @default(now()) @db.Date
+  created_at     DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at     DateTime?        @default(now()) @db.Timestamp(6)
 }
 
 model card_info {
@@ -38,8 +38,8 @@ model card_info {
   aacct                  String?          @db.VarChar(255)
   tk                     String?          @db.VarChar(255)
   par                    String?          @db.VarChar(255)
-  created_at             DateTime?        @default(now()) @db.Date
-  updated_at             DateTime?        @default(now()) @db.Date
+  created_at             DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at             DateTime?        @default(now()) @db.Timestamp(6)
   cashbox                cashbox?         @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   payment                payment[]
 }
@@ -57,8 +57,8 @@ model cashbox {
   notifications_email  String?              @db.VarChar(255)
   notifications_number String?              @db.VarChar(255)
   companyId            Int?
-  created_at           DateTime?            @default(now()) @db.Date
-  updated_at           DateTime?            @default(now()) @db.Date
+  created_at           DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?            @default(now()) @db.Timestamp(6)
   card_info            card_info[]
   company              company?             @relation(fields: [companyId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   epos                 epos[]
@@ -77,8 +77,8 @@ model company {
   director_fullname String        @db.VarChar(255)
   address           String        @db.VarChar(255)
   organization_id   Int?
-  created_at        DateTime?     @default(now()) @db.Date
-  updated_at        DateTime?     @default(now()) @db.Date
+  created_at        DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at        DateTime?     @default(now()) @db.Timestamp(6)
   cashbox           cashbox[]
   organization      organization? @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
@@ -89,8 +89,8 @@ model epos {
   merchant_id String           @db.VarChar(255)
   terminal_id String           @db.VarChar(255)
   cashbox_id  Int?
-  created_at  DateTime?        @default(now()) @db.Date
-  updated_at  DateTime?        @default(now()) @db.Date
+  created_at  DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at  DateTime?        @default(now()) @db.Timestamp(6)
   cashbox     cashbox?         @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
@@ -99,8 +99,8 @@ model organization {
   name       String    @db.VarChar(255)
   address    String?   @db.VarChar(255)
   phone      String?   @db.VarChar(255)
-  created_at DateTime? @default(now()) @db.Date
-  updated_at DateTime? @default(now()) @db.Date
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
   company    company[]
 }
 
@@ -108,8 +108,8 @@ model otp {
   id         Int       @id @default(autoincrement())
   code       Int
   payment_id Int?
-  created_at DateTime? @default(now()) @db.Date
-  updated_at DateTime? @default(now()) @db.Date
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
   payment    payment?  @relation(fields: [payment_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
@@ -125,8 +125,8 @@ model payer {
   country     String?   @db.VarChar(255)
   phone       String?   @db.VarChar(255)
   postcode    String?   @db.VarChar(255)
-  created_at  DateTime? @default(now()) @db.Date
-  updated_at  DateTime? @default(now()) @db.Date
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
 }
 
 model payment {
@@ -150,8 +150,8 @@ model payment {
   name                   String?          @db.VarChar(255)
   card_cryptogram_packet String?
   status                 String           @default("Pending") @db.VarChar(255)
-  created_at             DateTime?        @default(now()) @db.Date
-  updated_at             DateTime?        @default(now()) @db.Date
+  created_at             DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at             DateTime?        @default(now()) @db.Timestamp(6)
   otp                    otp[]
   card_info              card_info?       @relation(fields: [card_info_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   cashbox                cashbox?         @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -163,8 +163,8 @@ model session {
   user_id    Int?
   expires    DateTime  @db.Date
   data       String?
-  created_at DateTime? @default(now()) @db.Date
-  updated_at DateTime? @default(now()) @db.Date
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
   cashbox    cashbox?  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
