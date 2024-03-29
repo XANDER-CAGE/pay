@@ -325,9 +325,8 @@ export class HumoProcessingService {
         paymentRefFromHumo: paymentRef,
       };
     } catch (error) {
-      console.log(error);
       console.log('Error holding payment ' + error.message);
-      throw new Error('Error confirming payment ');
+      throw new Error('Error holding payment ');
     }
   }
 
@@ -374,7 +373,6 @@ export class HumoProcessingService {
 
       return;
     } catch (error) {
-      console.log(error);
       console.log('Error confirming payment ' + error.message);
       throw new Error('Error confirming payment ');
     }
