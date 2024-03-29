@@ -233,96 +233,102 @@ export class HumoProcessingService {
   }
 
   private async holdRequest(payment: payment): Promise<IHoldRequest> {
-    const epos = await this.prisma.epos.findFirst({
-      where: {
-        cashbox_id: payment.cashbox_id,
-        type: 'humo',
-      },
-    });
-    if (!epos) {
-      throw new NotFoundException('EPOS for Humo not found');
-    }
-    const { pan, expiry } = this.decrypService.decryptCardCryptogram(
-      payment.card_cryptogram_packet,
-    );
-    const amountWidth100 = +payment.amount * 100;
-    const xml = `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-
-    ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema -
-    instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ebppif1="urn:PaymentServer">
-    <SOAP-ENV:Body>
-    <ebppif1:Payment>
-    <language>en</language>
-    <billerRef>SOAP_DMS</billerRef>
-    <payinstrRef>SOAP_DMS</payinstrRef>
-    <sessionID>SOAP_DMS_20220106090000</sessionID>
-    <paymentRef>${payment.id}</paymentRef>
-    <details>
-    <item>
-    <name>pan</name>
-    <value>${pan}</value>
-    </item>
-    <item>
-    <name>expiry</name>
-    <value>${expiry}</value>
-    </item>
-    <item>
-    <name>ccy_code</name>
-    <value>860</value>
-    </item>
-    <item>
-    <name>amount</name>
-    <value>${amountWidth100}</value>
-    </item>
-    <item>
-    <name>merchant_id</name>
-    <value>${epos.merchant_id}</value>
-    </item>
-    <item>
-    <name>terminal_id</name>
-    <value>${epos.terminal_id}</value>
-    </item>
-    <item>
-    <name>point_code</name>
-    <value>${this.humoSoapPointCode}</value>
-    </item>
-    <item>
-    <name>centre_id</name>
-    <value>${this.humoSoapCenterId}</value>
-    </item>
-    </details>
-    <paymentOriginator>${this.humoSoapUsername}</paymentOriginator>
-    </ebppif1:Payment>
-    </SOAP-ENV:Body>
-    </SOAP-ENV:Envelope>`;
-
-    const jsonData: any = await axios.post(this.humoSoapUrl, xml, {
-      headers: {
-        'Content-Type': 'text/xml',
-      },
-      auth: {
-        username: this.humoSoapUsername,
-        password: this.humoSoapPassword,
-      },
-    });
-    console.log('RESPONSE FROM HOLD REQUEST HUMO: ', jsonData);
-    const jsonfromXml = parser.toJson(jsonData.data);
-    const json =
-      JSON.parse(jsonfromXml)['SOAP-ENV:Envelope']['SOAP-ENV:Body'][
-        'ebppif1:PaymentResponse'
-      ];
-    const paymentID = json.paymentID;
-    const paymentRef = json.paymentRef;
-    const action = json.action;
-
-    if (action != 4) {
-      throw new BadRequestException(
-        'Fail. Check your credentials and try again',
+    try {
+      const epos = await this.prisma.epos.findFirst({
+        where: {
+          cashbox_id: payment.cashbox_id,
+          type: 'humo',
+        },
+      });
+      if (!epos) {
+        throw new NotFoundException('EPOS for Humo not found');
+      }
+      const { pan, expiry } = this.decrypService.decryptCardCryptogram(
+        payment.card_cryptogram_packet,
       );
+      const amountWidth100 = +payment.amount * 100;
+      const xml = `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-
+      ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema -
+      instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ebppif1="urn:PaymentServer">
+      <SOAP-ENV:Body>
+      <ebppif1:Payment>
+      <language>en</language>
+      <billerRef>SOAP_DMS</billerRef>
+      <payinstrRef>SOAP_DMS</payinstrRef>
+      <sessionID>SOAP_DMS_20220106090000</sessionID>
+      <paymentRef>${payment.id}</paymentRef>
+      <details>
+      <item>
+      <name>pan</name>
+      <value>${pan}</value>
+      </item>
+      <item>
+      <name>expiry</name>
+      <value>${expiry}</value>
+      </item>
+      <item>
+      <name>ccy_code</name>
+      <value>860</value>
+      </item>
+      <item>
+      <name>amount</name>
+      <value>${amountWidth100}</value>
+      </item>
+      <item>
+      <name>merchant_id</name>
+      <value>${epos.merchant_id}</value>
+      </item>
+      <item>
+      <name>terminal_id</name>
+      <value>${epos.terminal_id}</value>
+      </item>
+      <item>
+      <name>point_code</name>
+      <value>${this.humoSoapPointCode}</value>
+      </item>
+      <item>
+      <name>centre_id</name>
+      <value>${this.humoSoapCenterId}</value>
+      </item>
+      </details>
+      <paymentOriginator>${this.humoSoapUsername}</paymentOriginator>
+      </ebppif1:Payment>
+      </SOAP-ENV:Body>
+      </SOAP-ENV:Envelope>`;
+
+      const jsonData: any = await axios.post(this.humoSoapUrl, xml, {
+        headers: {
+          'Content-Type': 'text/xml',
+        },
+        auth: {
+          username: this.humoSoapUsername,
+          password: this.humoSoapPassword,
+        },
+      });
+      console.log('RESPONSE FROM HOLD REQUEST HUMO: ', jsonData);
+      const jsonfromXml = parser.toJson(jsonData.data);
+      const json =
+        JSON.parse(jsonfromXml)['SOAP-ENV:Envelope']['SOAP-ENV:Body'][
+          'ebppif1:PaymentResponse'
+        ];
+      const paymentID = json.paymentID;
+      const paymentRef = json.paymentRef;
+      const action = json.action;
+
+      if (action != 4) {
+        throw new BadRequestException(
+          'Fail. Check your credentials and try again',
+        );
+      }
+      return {
+        paymentIdFromHumo: paymentID,
+        paymentRefFromHumo: paymentRef,
+      };
+    } catch (error) {
+      console.log(error);
+      console.log('Error holding payment ' + error.message);
+      throw new Error('Error confirming payment ');
     }
-    return {
-      paymentIdFromHumo: paymentID,
-      paymentRefFromHumo: paymentRef,
-    };
   }
 
   async confirmPaymentHumo(
@@ -354,6 +360,17 @@ export class HumoProcessingService {
         },
       });
       console.log('HUMO CONFIRM PAYMENT RESPONSE: ', response.data);
+
+      const jsonData = parser.toJson(response.data);
+      const json = JSON.parse(jsonData);
+      const action =
+        json['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ebppif1:PaymentResponse']
+          .action;
+      if (action != 10) {
+        throw new BadRequestException(
+          'Fail. Check your credentials and try again',
+        );
+      }
 
       return;
     } catch (error) {
