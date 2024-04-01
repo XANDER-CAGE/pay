@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { CreateCardDto } from './dto/create-card.dto';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -6,6 +6,14 @@ import { PrismaService } from '../prisma/prisma.service';
 export class CardsService {
   constructor(private readonly prisma: PrismaService) {}
   async create(dto: CreateCardDto) {
+    const card = await this.prisma.card_info.findFirst({
+      where: {
+        tk: dto.token,
+      },
+    });
+    if (card) {
+      throw new ConflictException('This token already exists: ' + dto.token);
+    }
     return await this.prisma.card_info.create({
       data: {
         card_cryptogram_packet: dto.cryptogram,
