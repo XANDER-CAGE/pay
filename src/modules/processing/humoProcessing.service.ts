@@ -305,7 +305,7 @@ export class HumoProcessingService {
           password: this.humoSoapPassword,
         },
       });
-      console.log('RESPONSE FROM HOLD REQUEST HUMO: ', jsonData);
+      console.log('RESPONSE FROM HOLD REQUEST HUMO: ', jsonData.data);
       const jsonfromXml = parser.toJson(jsonData.data);
       const json =
         JSON.parse(jsonfromXml)['SOAP-ENV:Envelope']['SOAP-ENV:Body'][
@@ -325,7 +325,9 @@ export class HumoProcessingService {
         paymentRefFromHumo: paymentRef,
       };
     } catch (error) {
-      console.log('Error holding payment ' + error.message);
+      console.log(
+        'Error holding payment ' + error.message || error.response.data,
+      );
       throw new Error('Error holding payment ');
     }
   }
@@ -373,7 +375,9 @@ export class HumoProcessingService {
 
       return;
     } catch (error) {
-      console.log('Error confirming payment ' + error.message);
+      console.log(
+        'Error confirming payment ' + error.message || error.response.data,
+      );
       throw new Error('Error confirming payment ');
     }
   }

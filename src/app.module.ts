@@ -8,6 +8,7 @@ import { AcsModule } from './modules/acs/acs.module';
 import { DecryptModule } from './modules/decrypt/decrypt.module';
 import { CheckAreqModule } from './modules/check-areq/check-areq.module';
 import { ValidateModule } from './modules/validate/validate.module';
+import { CardsModule } from './modules/cards/cards.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ValidateModule } from './modules/validate/validate.module';
     DecryptModule,
     CheckAreqModule,
     ValidateModule,
+    CardsModule,
   ],
   controllers: [],
   providers: [],
