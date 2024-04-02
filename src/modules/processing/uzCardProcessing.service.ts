@@ -334,6 +334,8 @@ export class UzCardProcessingService {
       },
     });
 
+    console.log('PAY BY TOKEN RESPONSE: ', response.data);
+
     let isError: boolean;
     const failReason = response.data?.error?.message;
     const statusIsOK = response.data?.result?.status == 'OK';

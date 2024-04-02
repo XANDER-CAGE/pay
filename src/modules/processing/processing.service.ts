@@ -198,6 +198,16 @@ export class ProcessingService {
     data.BankName = bankName;
     data.CardFirstSix = pan.substring(0, 6);
     data.CardLastFour = pan.slice(-4);
+    if (!cardInfo.fullname) {
+      await this.prisma.card_info.update({
+        where: {
+          id: cardInfo.id,
+        },
+        data: {
+          fullname: data.CardHolderName,
+        },
+      });
+    }
     return data;
   }
 
