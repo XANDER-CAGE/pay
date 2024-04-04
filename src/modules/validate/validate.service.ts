@@ -27,20 +27,21 @@ export class ValidateService {
       payment.card_cryptogram_packet,
     );
     //генерим tk
-    const tk = crypto.createHash('md5').update(pan).digest('hex');
+    const tk = crypto
+      .createHash('md5')
+      .update(pan + Date.now())
+      .digest('hex');
     const cardData = await this.processingService.validate(
       pan,
       +dto.smsCode,
       +dto.otpId,
     );
+    const panRef = crypto.createHash('md5').update(pan).digest('hex');
     console.log('validate service cardData: ', cardData);
-    await this.prisma.card_info.upsert({
-      where: {
+    await this.prisma.card_info.create({
+      data: {
         processing_id: String(cardData.processingId),
-      },
-      create: {
-        processing_id: String(cardData.processingId),
-        pan: String(cardData.pan),
+        pan: pan.slice(0, 6) + '******' + pan.slice(-4),
         expiry: String(cardData.expiry),
         status: cardData.status,
         phone: cardData.phone,
@@ -55,23 +56,8 @@ export class ValidateService {
         par: cardData.par,
         tk: 'tk_' + tk,
         cashbox_id: payment.cashbox_id,
-      },
-      update: {
-        pan: String(cardData.pan),
-        expiry: String(cardData.expiry),
-        status: cardData.status,
-        phone: cardData.phone,
-        fullname: cardData.fullName,
-        sms: cardData.sms,
-        pincnt: cardData.pincnt,
-        card_type: cardData.cardType,
-        hold_amount: cardData.holdAmount,
-        cashback_amount: cardData.cashbackAmount,
-        card_cryptogram_packet: payment.card_cryptogram_packet,
-        aacct: cardData.aacct,
-        par: cardData.par,
-        tk: 'tk_' + tk,
-        cashbox_id: payment.cashbox_id,
+        account_id: payment.account_id,
+        pan_ref: panRef,
       },
     });
     await this.prisma.payment.update({

@@ -164,10 +164,11 @@ export class UzCardProcessingService {
     const { expiry, pan } = this.decryptService.decryptCardCryptogram(
       payment.card_cryptogram_packet,
     );
-    const tk = crypto.createHash('md5').update(pan).digest('hex');
+    const panRef = crypto.createHash('md5').update(pan).digest('hex');
     const cardInfo = await this.prisma.card_info.findFirst({
       where: {
-        tk: 'tk_' + tk,
+        pan_ref: panRef,
+        account_id: payment.account_id,
       },
     });
     const width = +payment.amount * 100;

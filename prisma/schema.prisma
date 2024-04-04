@@ -23,7 +23,9 @@ model bin {
 model card_info {
   id                     Int              @id @default(autoincrement())
   cashbox_id             Int?
-  processing_id          String?          @unique @db.VarChar(255)
+  processing_id          String?          @db.VarChar(255)
+  account_id             String?          @db.VarChar(255)
+  pan_ref                String?          @db.VarChar(255)
   pan                    String?          @db.VarChar(255)
   card_cryptogram_packet String?
   expiry                 String?          @db.VarChar(255)
