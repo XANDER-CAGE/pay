@@ -58,6 +58,10 @@ interface IPayByToken {
   TransactionId: number;
 }
 
+interface IGetDataByToken {
+  fullName: string;
+}
+
 @Injectable()
 export class UzCardProcessingService {
   private readonly uzCardUrl: string;
@@ -336,6 +340,9 @@ export class UzCardProcessingService {
     });
 
     console.log('PAY BY TOKEN RESPONSE: ', response.data);
+    const { fullName } = await this.getDataByProcessingCardToken(
+      cardInfo.processing_id,
+    );
 
     let isError: boolean;
     const failReason = response.data?.error?.message;
@@ -367,7 +374,7 @@ export class UzCardProcessingService {
       AccountId: company.account_id,
       CardFirstSix: pan.substring(0, 6),
       CardLastFour: pan.slice(-4),
-      CardHolderName: cardInfo.fullname,
+      CardHolderName: fullName,
       CardToken: cardInfo.tk,
       Status: isError ? 'Declined' : 'Completed',
       Reason: failReason || null,
@@ -376,6 +383,33 @@ export class UzCardProcessingService {
       Success: isError ? false : true,
       TransactionId: payment.id,
     };
+  }
+
+  private async getDataByProcessingCardToken(
+    processingCardToken: string,
+  ): Promise<IGetDataByToken> {
+    try {
+      const requestData = {
+        jsonrpc: '2.0',
+        method: 'cards.get',
+        id: 123,
+        params: {
+          ids: [processingCardToken],
+        },
+      };
+      const response = await axios.post(this.uzCardUrl, requestData, {
+        auth: {
+          username: this.uzCardLogin,
+          password: this.uzCardPassword,
+        },
+      });
+      const fullName = response.data?.result[0]?.fullName;
+      return {
+        fullName,
+      };
+    } catch (error) {
+      console.log('ERROR GETTING PROCESSING CARD DATA BY TOKEN UZCARD', error);
+    }
   }
 
   async getDataByInvoiceId(invoiceId: string) {
