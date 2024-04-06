@@ -64,6 +64,7 @@ interface IPayByToken {
   Success: boolean;
   BankName?: string;
   TransactionId: number;
+  Phone: string;
 }
 
 @Injectable()
@@ -184,6 +185,7 @@ export class ProcessingService {
         Success: false,
         BankName: '',
         TransactionId: 0,
+        Phone: null,
       };
     }
     const { pan } = this.decryptService.decryptCardCryptogram(
@@ -199,7 +201,7 @@ export class ProcessingService {
     data.BankName = bankName;
     data.CardFirstSix = pan.substring(0, 6);
     data.CardLastFour = pan.slice(-4);
-    if (!cardInfo.fullname) {
+    if (!cardInfo.fullname || !cardInfo.phone) {
       const panRef = crypto.createHash('md5').update(pan).digest('hex');
       await this.prisma.card_info.update({
         where: {
@@ -209,6 +211,7 @@ export class ProcessingService {
           fullname: data.CardHolderName,
           pan_ref: panRef,
           account_id: String(dto.AccountId),
+          phone: data.Phone,
         },
       });
     }

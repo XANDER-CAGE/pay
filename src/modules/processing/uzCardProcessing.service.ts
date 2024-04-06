@@ -56,10 +56,12 @@ interface IPayByToken {
   Expiry: string;
   Success: boolean;
   TransactionId: number;
+  Phone: string;
 }
 
 interface IGetDataByToken {
   fullName: string;
+  phone: string;
 }
 
 @Injectable()
@@ -340,7 +342,7 @@ export class UzCardProcessingService {
     });
 
     console.log('PAY BY TOKEN RESPONSE: ', response.data);
-    const { fullName } = await this.getDataByProcessingCardToken(
+    const { fullName, phone } = await this.getDataByProcessingCardToken(
       cardInfo.processing_id,
     );
 
@@ -382,6 +384,7 @@ export class UzCardProcessingService {
       Expiry: expiry,
       Success: isError ? false : true,
       TransactionId: payment.id,
+      Phone: phone,
     };
   }
 
@@ -404,8 +407,10 @@ export class UzCardProcessingService {
         },
       });
       const fullName = response.data?.result[0]?.fullName;
+      const phone = response.data?.result[0]?.phone;
       return {
         fullName,
+        phone,
       };
     } catch (error) {
       console.log('ERROR GETTING PROCESSING CARD DATA BY TOKEN UZCARD', error);
