@@ -56,6 +56,12 @@ interface IPayByToken {
   Expiry: string;
   Success: boolean;
   TransactionId: number;
+  Phone: string;
+}
+
+interface IGetDataByToken {
+  fullName: string;
+  phone: string;
 }
 
 @Injectable()
@@ -164,10 +170,11 @@ export class UzCardProcessingService {
     const { expiry, pan } = this.decryptService.decryptCardCryptogram(
       payment.card_cryptogram_packet,
     );
-    const tk = crypto.createHash('md5').update(pan).digest('hex');
+    const panRef = crypto.createHash('md5').update(pan).digest('hex');
     const cardInfo = await this.prisma.card_info.findFirst({
       where: {
-        tk: 'tk_' + tk,
+        pan_ref: panRef,
+        account_id: payment.account_id,
       },
     });
     const width = +payment.amount * 100;
@@ -335,6 +342,9 @@ export class UzCardProcessingService {
     });
 
     console.log('PAY BY TOKEN RESPONSE: ', response.data);
+    const { fullName, phone } = await this.getDataByProcessingCardToken(
+      cardInfo.processing_id,
+    );
 
     let isError: boolean;
     const failReason = response.data?.error?.message;
@@ -366,7 +376,7 @@ export class UzCardProcessingService {
       AccountId: company.account_id,
       CardFirstSix: pan.substring(0, 6),
       CardLastFour: pan.slice(-4),
-      CardHolderName: cardInfo.fullname,
+      CardHolderName: fullName,
       CardToken: cardInfo.tk,
       Status: isError ? 'Declined' : 'Completed',
       Reason: failReason || null,
@@ -374,7 +384,37 @@ export class UzCardProcessingService {
       Expiry: expiry,
       Success: isError ? false : true,
       TransactionId: payment.id,
+      Phone: phone,
     };
+  }
+
+  private async getDataByProcessingCardToken(
+    processingCardToken: string,
+  ): Promise<IGetDataByToken> {
+    try {
+      const requestData = {
+        jsonrpc: '2.0',
+        method: 'cards.get',
+        id: 123,
+        params: {
+          ids: [processingCardToken],
+        },
+      };
+      const response = await axios.post(this.uzCardUrl, requestData, {
+        auth: {
+          username: this.uzCardLogin,
+          password: this.uzCardPassword,
+        },
+      });
+      const fullName = response.data?.result[0]?.fullName;
+      const phone = response.data?.result[0]?.phone;
+      return {
+        fullName,
+        phone,
+      };
+    } catch (error) {
+      console.log('ERROR GETTING PROCESSING CARD DATA BY TOKEN UZCARD', error);
+    }
   }
 
   async getDataByInvoiceId(invoiceId: string) {

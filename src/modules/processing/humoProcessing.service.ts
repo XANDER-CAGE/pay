@@ -64,6 +64,7 @@ interface IPayByToken {
   Expiry: string;
   Success: boolean;
   Status: 'Declined' | 'Completed';
+  Phone: string;
 }
 
 export class HumoProcessingService {
@@ -197,10 +198,11 @@ export class HumoProcessingService {
     const { pan, expiry } = this.decrypService.decryptCardCryptogram(
       payment.card_cryptogram_packet,
     );
-    const tk = crypto.createHash('md5').update(pan).digest('hex');
+    const panRef = crypto.createHash('md5').update(pan).digest('hex');
     const cardInfo = await this.prisma.card_info.findFirst({
       where: {
-        tk: 'tk_' + tk,
+        pan_ref: panRef,
+        account_id: payment.account_id,
       },
     });
     const { nameOnCard } = await this.getDataByPan(pan);
@@ -477,7 +479,7 @@ export class HumoProcessingService {
     const { pan, expiry } = this.decrypService.decryptCardCryptogram(
       payment.card_cryptogram_packet,
     );
-    const { nameOnCard } = await this.getDataByPan(pan);
+    const { nameOnCard, phone } = await this.getDataByPan(pan);
     await this.prisma.payment.update({
       where: {
         id: payment.id,
@@ -503,6 +505,7 @@ export class HumoProcessingService {
       Expiry: expiry,
       Success: true,
       Status: 'Completed',
+      Phone: phone,
     };
   }
 }
