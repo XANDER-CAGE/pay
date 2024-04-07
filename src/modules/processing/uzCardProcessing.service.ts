@@ -12,6 +12,7 @@ import { DecryptService } from '../decrypt/decrypt.service';
 import * as crypto from 'crypto';
 import { PayByTokenDto } from '../payments/dto/payByToken.dto';
 import { MyReq } from 'src/common/interfaces/myReq.interface';
+import { CoreApiResponse } from 'src/common/classes/model.class';
 
 interface IValidate {
   processingId: string | number;
@@ -43,24 +44,8 @@ interface IHandle3dsPost {
   Success: boolean;
 }
 
-interface IPayByToken {
-  PublicId: string;
-  AccountId: string;
-  CardFirstSix: string;
-  CardLastFour: string;
-  CardHolderName: string;
-  CardToken: string;
-  Status: 'Declined' | 'Completed';
-  Reason: string | null;
-  Processing: CardType;
-  Expiry: string;
-  Success: boolean;
-  TransactionId: number;
-  Phone: string;
-}
-
 interface IGetDataByToken {
-  fullName: string;
+  fullname: string;
   phone: string;
 }
 
@@ -281,7 +266,7 @@ export class UzCardProcessingService {
     }
   }
 
-  async payByToken(dto: PayByTokenDto, req: MyReq): Promise<IPayByToken> {
+  async payByToken(dto: PayByTokenDto, req: MyReq): Promise<CoreApiResponse> {
     const epos = await this.prisma.epos.findFirst({
       where: {
         cashbox_id: req.cashboxId,
@@ -309,9 +294,9 @@ export class UzCardProcessingService {
         tk: dto.Token,
       },
     });
-    const { pan, expiry } = this.decryptService.decryptCardCryptogram(
-      cardInfo.card_cryptogram_packet,
-    );
+    // const { pan, expiry } = this.decryptService.decryptCardCryptogram(
+    //   cardInfo.card_cryptogram_packet,
+    // );
 
     const width = +dto.Amount * 100;
 
@@ -342,19 +327,9 @@ export class UzCardProcessingService {
     });
 
     console.log('PAY BY TOKEN RESPONSE: ', response.data);
-    const { fullName, phone } = await this.getDataByProcessingCardToken(
-      cardInfo.processing_id,
-    );
-
-    let isError: boolean;
-    const failReason = response.data?.error?.message;
-    const statusIsOK = response.data?.result?.status == 'OK';
-    const refNum = response.data?.result?.refNum;
-    const refNumExists = refNum && refNum != '000000000000';
-    if (failReason || !refNumExists || !statusIsOK) {
-      isError = true;
-    }
-
+    // const { fullName, phone } = await this.getDataByProcessingCardToken(
+    //   cardInfo.processing_id,
+    // );
     const payment = await this.prisma.payment.create({
       data: {
         invoice_id: String(dto.InvoiceId),
@@ -364,31 +339,75 @@ export class UzCardProcessingService {
         currency: dto.Currency,
         description: dto.Description,
         cashbox_id: req.cashboxId,
-        status: isError ? 'Declined' : 'Completed',
-        processing_id: String(response.data?.result?.refNum),
         processing: 'uzcard',
+        status: 'Authorized',
         ip_address: req.ip,
         card_cryptogram_packet: cardInfo.card_cryptogram_packet,
       },
     });
-    return {
+
+    let isError: boolean;
+    const failReason = response.data?.error?.message;
+    const statusIsOK = response.data?.result?.status == 'OK';
+    const refNum = response.data?.result?.refNum;
+    const errorCode = response.data?.result?.resp;
+    const refNumExists = refNum && refNum != '000000000000';
+    if (failReason || !refNumExists || !statusIsOK) {
+      isError = true;
+    }
+    if (errorCode == 51) {
+      return CoreApiResponse.insufficentFunds({
+        AccountId: payment.account_id,
+        Amount: Number(payment.amount),
+        CardExpDate: cardInfo.expiry,
+        CardType: cardInfo.card_type,
+        Date: payment.created_at,
+        Description: payment.description,
+        GatewayName: 'uzcard',
+        InvoiceId: payment.invoice_id,
+        IpAddress: payment.ip_address,
+        IpCity: payment.ip_city,
+        IpCountry: payment.ip_country,
+        IpRegion: payment.ip_region,
+        Name: cardInfo.fullname,
+        Pan: cardInfo.pan,
+        PublicId: cashbox.public_id,
+        Token: cardInfo.tk,
+        TransactionId: payment.id,
+      });
+    }
+    await this.prisma.payment.update({
+      where: {
+        id: payment.id,
+      },
+      data: {
+        status: isError ? 'Declined' : 'Completed',
+        processing_id: String(response.data?.result?.refNum),
+      },
+    });
+
+    return CoreApiResponse.success({
+      AccountId: payment.account_id,
+      Amount: Number(payment.amount),
+      CardExpDate: cardInfo.expiry,
+      CardType: cardInfo.card_type,
+      Date: payment.created_at,
+      Description: payment.description,
+      GatewayName: 'uzcard',
+      InvoiceId: payment.invoice_id,
+      IpAddress: payment.ip_address,
+      IpCity: payment.ip_city,
+      IpCountry: payment.ip_country,
+      IpRegion: payment.ip_region,
+      Name: cardInfo.fullname,
+      Pan: cardInfo.pan,
       PublicId: cashbox.public_id,
-      AccountId: company.account_id,
-      CardFirstSix: pan.substring(0, 6),
-      CardLastFour: pan.slice(-4),
-      CardHolderName: fullName,
-      CardToken: cardInfo.tk,
-      Status: isError ? 'Declined' : 'Completed',
-      Reason: failReason || null,
-      Processing: CardType.UZCARD,
-      Expiry: expiry,
-      Success: isError ? false : true,
+      Token: cardInfo.tk,
       TransactionId: payment.id,
-      Phone: phone,
-    };
+    });
   }
 
-  private async getDataByProcessingCardToken(
+  async getDataByProcessingCardToken(
     processingCardToken: string,
   ): Promise<IGetDataByToken> {
     try {
@@ -406,10 +425,10 @@ export class UzCardProcessingService {
           password: this.uzCardPassword,
         },
       });
-      const fullName = response.data?.result[0]?.fullName;
+      const fullname = response.data?.result[0]?.fullName;
       const phone = response.data?.result[0]?.phone;
       return {
-        fullName,
+        fullname,
         phone,
       };
     } catch (error) {

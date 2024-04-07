@@ -13,6 +13,7 @@ import { Handle3dsPostDto } from './dto/handle3dsPost.dto';
 import { CardType } from 'src/common/enum/cardType.enum';
 import { RefundDto } from './dto/refund.dto';
 import { PayByTokenDto } from './dto/payByToken.dto';
+import { CoreApiResponse } from 'src/common/classes/model.class';
 
 interface IHandle3dsPost {
   Amount: number;
@@ -55,9 +56,9 @@ interface IPayByToken {
   CardToken: string;
   Status: string;
   Success: boolean;
-  BankName?: string;
-  Reason?: string | null;
-  ReasonCode?: number | null;
+  BankName: string;
+  Reason: string;
+  ReasonCode: number;
   CardExpDate: string;
   CardType: CardType;
 }
@@ -196,32 +197,9 @@ export class PaymentsService {
     };
   }
 
-  async payByToken(dto: PayByTokenDto, req: MyReq): Promise<IPayByToken> {
+  async payByToken(dto: PayByTokenDto, req: MyReq): Promise<CoreApiResponse> {
     const data = await this.processingService.payByCard(dto, req);
-    const cardExp =
-      data.Expiry.substring(2) + '/' + data.Expiry.substring(0, 2);
-    return {
-      AccountId: data.AccountId,
-      Amount: +dto.Amount,
-      CardExpDate: cardExp,
-      CardFirstSix: data.CardFirstSix,
-      CardHolderName: data.CardHolderName,
-      CardLastFour: data.CardLastFour,
-      CardToken: dto.Token,
-      CardType: data.Processing,
-      Currency: dto.Currency,
-      InvoiceId: String(dto.InvoiceId),
-      IpAddress: req.ip,
-      Success: data.Success,
-      Status: data.Status,
-      PublicId: data.PublicId,
-      BankName: data.BankName,
-      TransactionId: data.TransactionId,
-      Reason: data.Reason,
-      ReasonCode: data.ReasonCode,
-      CreatedDate: Date.now(),
-      CreatedDateIso: new Date().toISOString(),
-    };
+    return data;
   }
 
   async getDataByByInvoiceId(invoiceId: string) {
