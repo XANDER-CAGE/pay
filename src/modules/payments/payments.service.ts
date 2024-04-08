@@ -10,58 +10,9 @@ import { LocationService } from './getGeoLocation.service';
 import { ProcessingService } from '../processing/processing.service';
 import { DecryptService } from '../decrypt/decrypt.service';
 import { Handle3dsPostDto } from './dto/handle3dsPost.dto';
-import { CardType } from 'src/common/enum/cardType.enum';
 import { RefundDto } from './dto/refund.dto';
 import { PayByTokenDto } from './dto/payByToken.dto';
 import { CoreApiResponse } from 'src/common/classes/model.class';
-
-interface IHandle3dsPost {
-  Amount: number;
-  Currency: string;
-  PublicId: string;
-  AccountId: string;
-  TransactionId: number;
-  InvoiceId: string;
-  IpAddress: string;
-  CardFirstSix: string;
-  CardLastFour: string;
-  CreatedDate: number;
-  CreatedDateIso: string;
-  CardHolderName: string;
-  CardToken: string;
-  Status: string;
-  Success: boolean;
-  BankName?: string;
-  Reason?: string | null;
-  IpCountry: string;
-  CardExpDate: string;
-  CardType: CardType;
-  IpCity: string;
-  IpRegion: string;
-}
-
-interface IPayByToken {
-  Amount: number;
-  Currency: string;
-  PublicId: string;
-  AccountId: string;
-  TransactionId: number;
-  InvoiceId: string;
-  IpAddress: string;
-  CardFirstSix: string;
-  CardLastFour: string;
-  CreatedDate: number;
-  CreatedDateIso: string;
-  CardHolderName: string;
-  CardToken: string;
-  Status: string;
-  Success: boolean;
-  BankName: string;
-  Reason: string;
-  ReasonCode: number;
-  CardExpDate: string;
-  CardType: CardType;
-}
 
 @Injectable()
 export class PaymentsService {
@@ -145,7 +96,7 @@ export class PaymentsService {
     };
   }
 
-  async handle3DSPost(dto: Handle3dsPostDto): Promise<IHandle3dsPost> {
+  async handle3DSPost(dto: Handle3dsPostDto): Promise<CoreApiResponse> {
     const payment = await this.prisma.payment.findFirst({
       where: { id: +dto.TransactionId },
     });
@@ -155,35 +106,11 @@ export class PaymentsService {
     if (payment.status !== 'Authorized') {
       throw new NotAcceptableException('Transaction not authorized');
     }
-    const { pan, expiry } = this.decryptService.decryptCardCryptogram(
+    const { pan } = this.decryptService.decryptCardCryptogram(
       payment.card_cryptogram_packet,
     );
-    const success = await this.processingService.handle3dsPost(payment, pan);
-    const date = new Date(payment.created_at);
-    return {
-      Amount: Number(payment.amount),
-      Currency: payment.currency,
-      PublicId: success.PublicId,
-      AccountId: success.AccountId,
-      TransactionId: payment.id,
-      InvoiceId: payment.invoice_id,
-      IpAddress: payment.ip_address,
-      CardFirstSix: success.CardFirstSix,
-      CardLastFour: success.CardLastFour,
-      CreatedDate: date.getTime(),
-      CreatedDateIso: date.toISOString(),
-      CardHolderName: success.CardHolderName,
-      CardToken: success.CardToken,
-      Status: success.Status,
-      Success: success.Success,
-      BankName: success.BankName,
-      Reason: success.Reason || null,
-      IpCountry: payment.ip_country,
-      IpCity: payment.ip_city,
-      IpRegion: payment.ip_region,
-      CardExpDate: expiry,
-      CardType: success.Processing,
-    };
+    const data = await this.processingService.handle3dsPost(payment, pan);
+    return data;
   }
 
   async refund(dto: RefundDto) {

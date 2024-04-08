@@ -34,22 +34,6 @@ interface IHoldRequest {
   paymentIdFromHumo: string | number;
   paymentRefFromHumo: string | number;
 }
-interface IHandle3dsPost {
-  Currency: string;
-  PublicId: string;
-  AccountId: string;
-  TransactionId: number;
-  InvoiceId: string;
-  IpAddress: string;
-  CardFirstSix: string;
-  CardLastFour: string;
-  CardHolderName: string;
-  CardToken: string;
-  Processing: CardType;
-  Expiry: string;
-  Success: boolean;
-  Status: 'Declined' | 'Completed';
-}
 
 export class HumoProcessingService {
   private readonly humoSoapUrl: string;
@@ -163,10 +147,7 @@ export class HumoProcessingService {
     };
   }
 
-  async handle3dsPost(payment: payment): Promise<IHandle3dsPost> {
-    const { paymentIdFromHumo, paymentRefFromHumo } =
-      await this.holdRequest(payment);
-    await this.confirmPaymentHumo(paymentIdFromHumo, paymentRefFromHumo);
+  async handle3dsPost(payment: payment): Promise<CoreApiResponse> {
     const cashbox = await this.prisma.cashbox.findFirst({
       where: {
         id: payment.cashbox_id,
@@ -179,7 +160,7 @@ export class HumoProcessingService {
         },
       },
     });
-    const { pan, expiry } = this.decrypService.decryptCardCryptogram(
+    const { pan } = this.decrypService.decryptCardCryptogram(
       payment.card_cryptogram_packet,
     );
     const panRef = crypto.createHash('md5').update(pan).digest('hex');
@@ -189,7 +170,31 @@ export class HumoProcessingService {
         account_id: payment.account_id,
       },
     });
-    const { fullname } = await this.getDataByPan(pan);
+    const { errorCode, paymentIdFromHumo, paymentRefFromHumo } =
+      await this.holdRequest(payment);
+    const data = {
+      AccountId: payment.account_id,
+      Amount: Number(payment.amount),
+      CardExpDate: cardInfo.expiry,
+      CardType: cardInfo.card_type,
+      Date: payment.created_at,
+      Description: payment.description,
+      GatewayName: 'humo',
+      InvoiceId: payment.invoice_id,
+      IpAddress: payment.ip_address,
+      IpCity: payment.ip_city,
+      IpCountry: payment.ip_country,
+      IpRegion: payment.ip_region,
+      Name: cardInfo.fullname,
+      Pan: pan,
+      PublicId: cashbox.public_id,
+      Token: cardInfo.tk,
+      TransactionId: payment.id,
+    };
+    if (errorCode == 116) {
+      return CoreApiResponse.insufficentFunds(data);
+    }
+    await this.confirmPaymentHumo(paymentIdFromHumo, paymentRefFromHumo);
     await this.prisma.payment.update({
       where: {
         id: payment.id,
@@ -200,22 +205,7 @@ export class HumoProcessingService {
         processing_id: String(paymentRefFromHumo),
       },
     });
-    return {
-      Currency: payment.currency,
-      PublicId: cashbox.public_id,
-      AccountId: cashbox.company.account_id,
-      TransactionId: payment.id,
-      InvoiceId: payment.invoice_id,
-      IpAddress: payment.ip_address,
-      CardFirstSix: pan.substring(0, 6),
-      CardLastFour: pan.slice(-4),
-      CardHolderName: fullname,
-      CardToken: cardInfo.tk,
-      Processing: CardType.HUMO,
-      Expiry: expiry,
-      Success: true,
-      Status: 'Completed',
-    };
+    return CoreApiResponse.success(data);
   }
 
   private async holdRequest(payment: payment): Promise<IHoldRequest> {

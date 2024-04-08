@@ -39,21 +39,6 @@ interface IGetDataByCardInfo {
   phone: string;
 }
 
-interface IHandle3dsPost {
-  PublicId: string;
-  AccountId: string;
-  CardFirstSix: string;
-  CardLastFour: string;
-  CardHolderName: string;
-  CardToken: string;
-  Status: 'Declined' | 'Completed';
-  Reason?: string | null;
-  Processing: CardType;
-  Expiry: string;
-  Success: boolean;
-  BankName?: string;
-}
-
 @Injectable()
 export class ProcessingService {
   constructor(
@@ -115,15 +100,15 @@ export class ProcessingService {
     return data;
   }
 
-  async handle3dsPost(payment: payment, pan: string): Promise<IHandle3dsPost> {
+  async handle3dsPost(payment: payment, pan: string): Promise<CoreApiResponse> {
     const { processing, bankName } = await this.determine(pan);
-    let data: IHandle3dsPost;
+    let data: CoreApiResponse;
     if (processing == 'uzcard') {
       data = await this.uzCardService.handle3dsPost(payment);
     } else if (processing == 'humo') {
       data = await this.humoService.handle3dsPost(payment);
     }
-    data.BankName = bankName;
+    data.Model.GatewayName = bankName;
     return data;
   }
 
