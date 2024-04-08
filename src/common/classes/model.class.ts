@@ -143,41 +143,46 @@ export class CoreApiResponse {
   };
   Success: boolean;
   Message: null;
-  ErrorCode: null;
 
   constructor(data: IData) {
+    console.log(data.ReasonCode);
+
     const date = new Date(data.Date);
     const cardExp = data.CardExpDate
       ? data.CardExpDate.substring(2) + '/' + data.CardExpDate.substring(0, 2)
       : null;
+    const Model = {
+      ReasonCode: data.ReasonCode,
+      PublicId: data.PublicId,
+      TransactionId: data.TransactionId,
+      Amount: data.Amount,
+      Currency: 'UZS',
+      PaymentAmount: data.Amount,
+      PaymentCurrency: 'UZS',
+      InvoiceId: data.InvoiceId,
+      AccountId: data.AccountId,
+      Description: data.Description,
+      CreatedDate: `/Date(${date.getTime()})/`,
+      CreatedDateIso: date.toISOString(),
+      IpAddress: data.IpAddress,
+      IpCountry: data.IpCountry,
+      IpCity: data.IpCity,
+      IpRegion: data.IpRegion,
+      CardFirstSix: data.Pan ? data.Pan.slice(0, 6) : null,
+      CardLastFour: data.Pan ? data.Pan.slice(-4) : null,
+      CardExpDate: cardExp,
+      CardType: data.CardType,
+      Status: data.Status,
+      Reason: data.Reason,
+      CardHolderMessage: data.CardHolderMessage,
+      Refunded: data.Refunded,
+      Name: data.Name,
+      Token: data.Token,
+      GatewayName: data.GatewayName,
+    };
+    this.Model = { ...this.Model, ...Model };
     this.Success = data.Success;
-    this.Model.ReasonCode = data.ReasonCode;
-    this.Model.PublicId = data.PublicId;
-    this.Model.TransactionId = data.TransactionId;
-    this.Model.Amount = data.Amount;
-    this.Model.Currency = 'UZS';
-    this.Model.PaymentAmount = data.Amount;
-    this.Model.PaymentCurrency = 'UZS';
-    this.Model.InvoiceId = data.InvoiceId;
-    this.Model.AccountId = data.AccountId;
-    this.Model.Description = data.Description;
-    this.Model.CreatedDate = `/Date(${date.getTime()})/`;
-    this.Model.CreatedDateIso = date.toISOString();
-    this.Model.IpAddress = data.IpAddress;
-    this.Model.IpCountry = data.IpCountry;
-    this.Model.IpCity = data.IpCity;
-    this.Model.IpRegion = data.IpRegion;
-    this.Model.CardFirstSix = data.Pan ? data.Pan.slice(0, 6) : null;
-    this.Model.CardLastFour = data.Pan ? data.Pan.slice(-4) : null;
-    this.Model.CardExpDate = cardExp;
-    this.Model.CardType = data.CardType;
-    this.Model.Status = data.Status;
-    this.Model.Reason = data.Reason;
-    this.Model.CardHolderMessage = data.CardHolderMessage;
-    this.Model.Refunded = data.Refunded;
-    this.Model.Name = data.Name;
-    this.Model.Token = data.Token;
-    this.Model.GatewayName = data.GatewayName;
+    this.Message = null;
   }
 
   static success(successData: ISuccess) {
