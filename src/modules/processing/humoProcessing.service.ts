@@ -203,6 +203,7 @@ export class HumoProcessingService {
         processing: 'humo',
         status: 'Completed',
         processing_id: String(paymentRefFromHumo),
+        card_info_id: cardInfo.id,
       },
     });
     return CoreApiResponse.success(data);
@@ -458,6 +459,26 @@ export class HumoProcessingService {
     // const { nameOnCard, phone } = await this.getDataByPan(pan);
     const { errorCode, paymentIdFromHumo, paymentRefFromHumo } =
       await this.holdRequest(payment);
+
+    const data = {
+      AccountId: payment.account_id,
+      Amount: Number(payment.amount),
+      CardExpDate: cardInfo.expiry,
+      CardType: cardInfo.card_type,
+      Date: payment.created_at,
+      Description: payment.description,
+      GatewayName: 'humo',
+      InvoiceId: payment.invoice_id,
+      IpAddress: payment.ip_address,
+      IpCity: payment.ip_city,
+      IpCountry: payment.ip_country,
+      IpRegion: payment.ip_region,
+      Name: cardInfo.fullname,
+      Pan: pan,
+      PublicId: cashbox.public_id,
+      Token: cardInfo.tk,
+      TransactionId: payment.id,
+    };
     // 000 Утверждено
     // 001 Утверждено, честь с идентификацией
     // 100 Отклонение (общее, без комментариев)
@@ -486,25 +507,7 @@ export class HumoProcessingService {
     // точки
     // 916 Сообщение о причине отклонения: MAC неверный
     if (errorCode == 116) {
-      return CoreApiResponse.insufficentFunds({
-        AccountId: payment.account_id,
-        Amount: Number(payment.amount),
-        CardExpDate: cardInfo.expiry,
-        CardType: cardInfo.card_type,
-        Date: payment.created_at,
-        Description: payment.description,
-        GatewayName: 'humo',
-        InvoiceId: payment.invoice_id,
-        IpAddress: payment.ip_address,
-        IpCity: payment.ip_city,
-        IpCountry: payment.ip_country,
-        IpRegion: payment.ip_region,
-        Name: cardInfo.fullname,
-        Pan: pan,
-        PublicId: cashbox.public_id,
-        Token: cardInfo.tk,
-        TransactionId: payment.id,
-      });
+      return CoreApiResponse.insufficentFunds(data);
     }
     await this.confirmPaymentHumo(paymentIdFromHumo, paymentRefFromHumo);
     await this.prisma.payment.update({
@@ -517,24 +520,6 @@ export class HumoProcessingService {
         processing_id: String(paymentRefFromHumo),
       },
     });
-    return CoreApiResponse.success({
-      AccountId: payment.account_id,
-      Amount: Number(payment.amount),
-      CardExpDate: cardInfo.expiry,
-      CardType: cardInfo.card_type,
-      Date: payment.created_at,
-      Description: payment.description,
-      GatewayName: 'humo',
-      InvoiceId: payment.invoice_id,
-      IpAddress: payment.ip_address,
-      IpCity: payment.ip_city,
-      IpCountry: payment.ip_country,
-      IpRegion: payment.ip_region,
-      Name: cardInfo.fullname,
-      Pan: pan,
-      PublicId: cashbox.public_id,
-      Token: cardInfo.tk,
-      TransactionId: payment.id,
-    });
+    return CoreApiResponse.success(data);
   }
 }

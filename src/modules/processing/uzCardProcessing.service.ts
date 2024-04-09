@@ -213,6 +213,7 @@ export class UzCardProcessingService {
         processing: 'uzcard',
         status: isError ? 'Declined' : 'Completed',
         processing_id: refNum,
+        card_info_id: cardInfo.id,
       },
     });
     return CoreApiResponse.success(data);
@@ -293,8 +294,22 @@ export class UzCardProcessingService {
     //   cardInfo.card_cryptogram_packet,
     // );
 
-    const width = +dto.Amount * 100;
+    const payment = await this.prisma.payment.create({
+      data: {
+        invoice_id: String(dto.InvoiceId),
+        account_id: String(dto.AccountId),
+        amount: dto.Amount,
+        card_info_id: cardInfo.id,
+        currency: dto.Currency,
+        description: dto.Description,
+        cashbox_id: req.cashboxId,
+        processing: 'uzcard',
+        ip_address: req.ip,
+        card_cryptogram_packet: cardInfo.card_cryptogram_packet,
+      },
+    });
 
+    const width = +dto.Amount * 100;
     const requestData = {
       id: 1,
       jsonrpc: '2.0',
@@ -325,21 +340,6 @@ export class UzCardProcessingService {
     // const { fullName, phone } = await this.getDataByProcessingCardToken(
     //   cardInfo.processing_id,
     // );
-    const payment = await this.prisma.payment.create({
-      data: {
-        invoice_id: String(dto.InvoiceId),
-        account_id: String(dto.AccountId),
-        amount: dto.Amount,
-        card_info_id: cardInfo.id,
-        currency: dto.Currency,
-        description: dto.Description,
-        cashbox_id: req.cashboxId,
-        processing: 'uzcard',
-        status: 'Authorized',
-        ip_address: req.ip,
-        card_cryptogram_packet: cardInfo.card_cryptogram_packet,
-      },
-    });
 
     let isError: boolean;
     const failReason = response.data?.error?.message;
