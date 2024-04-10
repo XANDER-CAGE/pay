@@ -32,7 +32,6 @@ export class SendSmsWithPlayMobile {
   }
 
   private customValidation() {
-    console.log(this.phone);
     if (String(this.phone).length !== 12) {
       return { status: 400, result: 'Ошибка при вводе, номера телефона!' };
     }
@@ -68,7 +67,6 @@ export class SendSmsWithPlayMobile {
         },
       });
       if (response.status !== 200) {
-        console.log(response);
         throw new Error('Смс шлюз не доступен');
       }
       return { status: 200, result: 'Смс успешно отправлено' };

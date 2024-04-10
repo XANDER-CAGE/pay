@@ -340,8 +340,6 @@ export class UzCardProcessingService {
         password: this.uzCardPassword,
       },
     });
-
-    console.log('PAY BY TOKEN RESPONSE: ', response.data);
     const { fullName, phone } = await this.getDataByProcessingCardToken(
       cardInfo.processing_id,
     );

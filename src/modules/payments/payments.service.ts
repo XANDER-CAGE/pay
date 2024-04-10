@@ -71,7 +71,6 @@ export class PaymentsService {
     private readonly decryptService: DecryptService,
   ) {}
   async charge(dto: PaymentChargeDto, req: MyReq) {
-    console.log('CHARGE DTO:', dto);
     const { decryptedLogin, expiry, pan } =
       this.decryptService.decryptCardCryptogram(dto.CardCryptogramPacket);
     if (req.basicAuthLogin !== decryptedLogin) {

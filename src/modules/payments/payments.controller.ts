@@ -125,8 +125,6 @@ export class PaymentsController {
       Message: null,
       ErrorCode: null,
     };
-    console.log('mockedResponse: ', mockedResponse);
-
     return mockedResponse;
   }
 
@@ -229,8 +227,6 @@ export class PaymentsController {
       Message: null,
       ErrorCode: null,
     };
-    console.log('mockedResponse: ', mockedResponse);
-
     return mockedResponse;
   }
 

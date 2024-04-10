@@ -14,7 +14,6 @@ export class ValidateService {
   ) {}
 
   async validate(dto: ValidateDto) {
-    console.log(+dto.md);
     const payment = await this.prisma.payment.findFirst({
       where: {
         id: +dto.md,
@@ -37,7 +36,6 @@ export class ValidateService {
       +dto.otpId,
     );
     const panRef = crypto.createHash('md5').update(pan).digest('hex');
-    console.log('validate service cardData: ', cardData);
     await this.prisma.card_info.create({
       data: {
         processing_id: String(cardData.processingId),
