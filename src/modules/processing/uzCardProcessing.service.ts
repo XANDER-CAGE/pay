@@ -193,17 +193,28 @@ export class UzCardProcessingService {
       Token: cardInfo.tk,
       TransactionId: payment.id,
     };
-    let isError: boolean;
     const failReason = response.data?.error?.message;
     const statusIsOK = response.data?.result?.status == 'OK';
     const errorCode = response.data?.result?.resp;
     const refNum = response.data?.result?.refNum;
     const refNumExists = refNum && refNum != '000000000000';
     if (failReason || !refNumExists || !statusIsOK) {
-      isError = true;
-    }
-    if (errorCode == 51) {
-      return CoreApiResponse.insufficentFunds(data);
+      await this.prisma.payment.update({
+        where: {
+          id: payment.id,
+        },
+        data: {
+          processing: 'uzcard',
+          status: 'Declined',
+          processing_id: refNum,
+          card_info_id: cardInfo.id,
+        },
+      });
+      if (errorCode == 51) {
+        return CoreApiResponse.insufficentFunds(data);
+      } else {
+        return CoreApiResponse.doNotHonor(data);
+      }
     }
     await this.prisma.payment.update({
       where: {
@@ -211,7 +222,7 @@ export class UzCardProcessingService {
       },
       data: {
         processing: 'uzcard',
-        status: isError ? 'Declined' : 'Completed',
+        status: 'Completed',
         processing_id: refNum,
         card_info_id: cardInfo.id,
       },
@@ -340,16 +351,6 @@ export class UzCardProcessingService {
     // const { fullName, phone } = await this.getDataByProcessingCardToken(
     //   cardInfo.processing_id,
     // );
-
-    let isError: boolean;
-    const failReason = response.data?.error?.message;
-    const statusIsOK = response.data?.result?.status == 'OK';
-    const refNum = response.data?.result?.refNum;
-    const errorCode = response.data?.result?.resp;
-    const refNumExists = refNum && refNum != '000000000000';
-    if (failReason || !refNumExists || !statusIsOK) {
-      isError = true;
-    }
     const data = {
       AccountId: payment.account_id,
       Amount: Number(payment.amount),
@@ -369,15 +370,35 @@ export class UzCardProcessingService {
       Token: cardInfo.tk,
       TransactionId: payment.id,
     };
-    if (errorCode == 51) {
-      return CoreApiResponse.insufficentFunds(data);
+
+    const failReason = response.data?.error?.message;
+    const statusIsOK = response.data?.result?.status == 'OK';
+    const refNum = response.data?.result?.refNum;
+    const errorCode = response.data?.result?.resp;
+    const refNumExists = refNum && refNum != '000000000000';
+    if (failReason || !refNumExists || !statusIsOK) {
+      await this.prisma.payment.update({
+        where: {
+          id: payment.id,
+        },
+        data: {
+          status: 'Declined',
+          processing_id: String(response.data?.result?.refNum),
+        },
+      });
+      if (errorCode == 51) {
+        return CoreApiResponse.insufficentFunds(data);
+      } else {
+        return CoreApiResponse.doNotHonor(data);
+      }
     }
+
     await this.prisma.payment.update({
       where: {
         id: payment.id,
       },
       data: {
-        status: isError ? 'Declined' : 'Completed',
+        status: 'Completed',
         processing_id: String(response.data?.result?.refNum),
       },
     });

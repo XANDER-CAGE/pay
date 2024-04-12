@@ -30,6 +30,7 @@ interface IValidate {
   cardType: CardType;
 }
 interface IHoldRequest {
+  success: boolean;
   errorCode: number;
   paymentIdFromHumo: string | number;
   paymentRefFromHumo: string | number;
@@ -170,7 +171,7 @@ export class HumoProcessingService {
         account_id: payment.account_id,
       },
     });
-    const { errorCode, paymentIdFromHumo, paymentRefFromHumo } =
+    const { success, errorCode, paymentIdFromHumo, paymentRefFromHumo } =
       await this.holdRequest(payment);
     const data = {
       AccountId: payment.account_id,
@@ -191,9 +192,25 @@ export class HumoProcessingService {
       Token: cardInfo.tk,
       TransactionId: payment.id,
     };
-    if (errorCode == 116) {
-      return CoreApiResponse.insufficentFunds(data);
+    if (!success) {
+      await this.prisma.payment.update({
+        where: {
+          id: payment.id,
+        },
+        data: {
+          processing: 'humo',
+          status: 'Declined',
+          processing_id: String(paymentRefFromHumo),
+          card_info_id: cardInfo.id,
+        },
+      });
+      if (errorCode == 116) {
+        return CoreApiResponse.insufficentFunds(data);
+      } else {
+        return CoreApiResponse.doNotHonor(data);
+      }
     }
+
     await this.confirmPaymentHumo(paymentIdFromHumo, paymentRefFromHumo);
     await this.prisma.payment.update({
       where: {
@@ -291,6 +308,7 @@ export class HumoProcessingService {
           'ebppif1:PaymentServerException'
         ]?.['error'];
       return {
+        success: false,
         errorCode,
         paymentIdFromHumo: 0,
         paymentRefFromHumo: 0,
@@ -311,13 +329,14 @@ export class HumoProcessingService {
       );
     }
     return {
+      success: true,
       errorCode: null,
       paymentIdFromHumo: paymentID,
       paymentRefFromHumo: paymentRef,
     };
   }
 
-  async confirmPaymentHumo(
+  private async confirmPaymentHumo(
     paymentIDFromHumo: string | number,
     paymentRefFromHumo: string | number,
   ) {
@@ -457,7 +476,7 @@ export class HumoProcessingService {
       payment.card_cryptogram_packet,
     );
     // const { nameOnCard, phone } = await this.getDataByPan(pan);
-    const { errorCode, paymentIdFromHumo, paymentRefFromHumo } =
+    const { success, errorCode, paymentIdFromHumo, paymentRefFromHumo } =
       await this.holdRequest(payment);
 
     const data = {
@@ -506,9 +525,24 @@ export class HumoProcessingService {
     // 915 Сообщение о причине отклонения: ошибка переключения или контрольной
     // точки
     // 916 Сообщение о причине отклонения: MAC неверный
-    if (errorCode == 116) {
-      return CoreApiResponse.insufficentFunds(data);
+    if (!success) {
+      await this.prisma.payment.update({
+        where: {
+          id: payment.id,
+        },
+        data: {
+          processing: 'humo',
+          status: 'Declined',
+          processing_id: String(paymentRefFromHumo),
+        },
+      });
+      if (errorCode == 116) {
+        return CoreApiResponse.insufficentFunds(data);
+      } else {
+        return CoreApiResponse.doNotHonor(data);
+      }
     }
+
     await this.confirmPaymentHumo(paymentIdFromHumo, paymentRefFromHumo);
     await this.prisma.payment.update({
       where: {

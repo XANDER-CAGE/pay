@@ -73,6 +73,21 @@ interface INoSuchIssuer {
   Token: string;
 }
 
+interface IDoNotHonor {
+  AccountId: string;
+  Amount: number;
+  CardExpDate: string;
+  CardType: string;
+  Description: string;
+  GatewayName: string;
+  InvoiceId: string;
+  Name: string;
+  Pan: string;
+  PublicId: string;
+  Token: string;
+  TransactionId: number;
+}
+
 export class CoreApiResponse {
   Model: {
     ReasonCode: number;
@@ -266,6 +281,35 @@ export class CoreApiResponse {
       Success: false,
       Token: data.Token,
       TransactionId: 0,
+    });
+  }
+
+  static doNotHonor(data: IDoNotHonor) {
+    return new CoreApiResponse({
+      AccountId: data.AccountId,
+      Amount: data.Amount,
+      CardExpDate: data.CardExpDate,
+      CardHolderMessage:
+        'Свяжитесь с вашим банком или воспользуйтесь другой картой',
+      CardType: data.CardType,
+      Date: new Date(),
+      Description: data.Description,
+      GatewayName: data.GatewayName,
+      InvoiceId: data.InvoiceId,
+      IpAddress: null,
+      IpCity: null,
+      IpCountry: null,
+      IpRegion: null,
+      Name: data.Name,
+      Pan: data.Pan,
+      PublicId: data.PublicId,
+      Reason: 'Do not honor',
+      ReasonCode: 5005,
+      Refunded: false,
+      Status: 'Declined',
+      Success: false,
+      Token: data.Token,
+      TransactionId: data.TransactionId,
     });
   }
 }
