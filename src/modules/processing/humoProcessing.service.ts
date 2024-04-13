@@ -300,14 +300,14 @@ export class HumoProcessingService {
         },
       });
     } catch (error) {
-      responseFromHumo = error.response.data;
+      responseFromHumo = error.response?.data;
+      console.log(responseFromHumo);
       const jsonfromXml = parser.toJson(responseFromHumo);
       const json = JSON.parse(jsonfromXml);
       const errorCode =
         json['SOAP-ENV:Body']?.['SOAP-ENV:Fault']?.['detail']?.[
           'ebppif1:PaymentServerException'
         ]?.['error'];
-      console.log('HUMO JSON:', json);
 
       return {
         success: false,
@@ -569,7 +569,7 @@ export class HumoProcessingService {
       <ebppif1:GetPayment>
       <paymentRef>${processingId}</paymentRef>
       <sessionID/>
-      <paymentOriginator>aab</paymentOriginator>
+      <paymentOriginator>${this.humoSoapUsername}</paymentOriginator>
       </ebppif1:GetPayment>
       </SOAP-ENV:Body>
       </SOAP-ENV:Envelope>
