@@ -199,7 +199,7 @@ export class ProcessingService {
       );
     } else if (processing == 'uzcard') {
       return await this.uzCardService.getDataByTransactionId(
-        payment.processing_id,
+        payment.invoice_id,
       );
     }
   }

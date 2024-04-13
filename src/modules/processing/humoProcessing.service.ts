@@ -307,6 +307,8 @@ export class HumoProcessingService {
         json['SOAP-ENV:Body']?.['SOAP-ENV:Fault']?.['detail']?.[
           'ebppif1:PaymentServerException'
         ]?.['error'];
+      console.log('HUMO JSON:', json);
+
       return {
         success: false,
         errorCode,
@@ -587,6 +589,7 @@ export class HumoProcessingService {
         'Error getting data by transaction id humo',
         error.response?.data || error.message,
       );
+      throw new Error(error.message);
     }
   }
 }

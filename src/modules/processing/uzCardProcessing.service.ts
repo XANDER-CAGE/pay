@@ -456,6 +456,7 @@ export class UzCardProcessingService {
         'error getting data by transaction id uzcard',
         error.response?.data || error.message,
       );
+      throw new Error(error.message);
     }
   }
 }
