@@ -6,8 +6,7 @@ import {
   UseGuards,
   Body,
   Req,
-  HttpException,
-  HttpStatus,
+  Param,
 } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import * as path from 'path';
@@ -85,8 +84,8 @@ export class PaymentsController {
     return response;
   }
 
-  @Post('invoice')
-  async invoice(@Body('invoiceId') invoiceId: string) {
-    return await this.paymentsService.getDataByByInvoiceId(invoiceId);
+  @Get(':transactionId')
+  async invoice(@Param('transactionId') transactionId: string) {
+    return await this.paymentsService.getDataByByTransactionId(+transactionId);
   }
 }

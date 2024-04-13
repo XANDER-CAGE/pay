@@ -556,4 +556,37 @@ export class HumoProcessingService {
     });
     return CoreApiResponse.success(data);
   }
+
+  async getDataByTransactionId(processingId: string) {
+    try {
+      const xml = `
+      <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-
+      ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-
+      instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ebppif1="urn:PaymentServer">
+      <SOAP-ENV:Body>
+      <ebppif1:GetPayment>
+      <paymentRef>${processingId}</paymentRef>
+      <sessionID/>
+      <paymentOriginator>aab</paymentOriginator>
+      </ebppif1:GetPayment>
+      </SOAP-ENV:Body>
+      </SOAP-ENV:Envelope>
+      `;
+      const response = await axios.post(this.humoSoapUrl, xml, {
+        headers: {
+          'Content-Type': 'text/xml',
+        },
+        auth: {
+          username: this.humoSoapUsername,
+          password: this.humoSoapPassword,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.log(
+        'Error getting data by transaction id humo',
+        error.response?.data || error.message,
+      );
+    }
+  }
 }

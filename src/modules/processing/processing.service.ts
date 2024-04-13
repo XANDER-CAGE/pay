@@ -180,8 +180,28 @@ export class ProcessingService {
     return data;
   }
 
-  async getDataByInvoiceId(invoiceId: string) {
-    return await this.uzCardService.getDataByInvoiceId(invoiceId);
+  async getDataByTransactionId(transactionId: number) {
+    const payment = await this.prisma.payment.findFirst({
+      where: {
+        id: transactionId,
+      },
+    });
+    if (!payment) {
+      throw new NotFoundException('Transaction not found');
+    }
+    const { pan } = this.decryptService.decryptCardCryptogram(
+      payment.card_cryptogram_packet,
+    );
+    const { processing } = await this.determine(pan);
+    if (processing == 'humo') {
+      return await this.humoService.getDataByTransactionId(
+        payment.processing_id,
+      );
+    } else if (processing == 'uzcard') {
+      return await this.uzCardService.getDataByTransactionId(
+        payment.processing_id,
+      );
+    }
   }
 
   private async getDataByCardInfo(

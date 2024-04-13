@@ -129,7 +129,7 @@ export class PaymentsService {
     return data;
   }
 
-  async getDataByByInvoiceId(invoiceId: string) {
-    return await this.processingService.getDataByInvoiceId(invoiceId);
+  async getDataByByTransactionId(transactionId: number) {
+    return await this.processingService.getDataByTransactionId(transactionId);
   }
 }
