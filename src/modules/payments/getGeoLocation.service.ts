@@ -23,8 +23,6 @@ export class LocationService {
   async getLocationByIP(ip: string): Promise<ILocation> {
     try {
       const response = await axios.get(`http://ip-api.com/json/${ip}`);
-      console.log(response.data);
-
       return response.data;
     } catch (error) {
       const errorMessage =

@@ -9,7 +9,6 @@ export class ValidateController {
   @Post()
   @Render('form')
   async validate(@Body() dto: ValidateDto) {
-    console.log('validate dto: ', dto);
     await this.validateService.validate(dto);
     const paResData = {
       IsCancelled: false,

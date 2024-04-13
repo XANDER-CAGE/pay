@@ -47,7 +47,6 @@ export class PaymentsController {
   @Post('cards/post3ds')
   async post3ds(@Body() dto: Handle3dsPostDto) {
     const response = await this.paymentsService.handle3DSPost(dto);
-    console.log('mockedResponse: ', response);
     return response;
   }
 
@@ -80,7 +79,6 @@ export class PaymentsController {
   @Post('tokens/charge')
   async payByToken(@Body() dto: PayByTokenDto, @Req() req: MyReq) {
     const response = await this.paymentsService.payByToken(dto, req);
-    console.log('mockedResponse: ', response);
     return response;
   }
 

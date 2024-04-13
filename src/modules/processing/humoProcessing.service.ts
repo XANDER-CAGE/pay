@@ -99,7 +99,6 @@ export class HumoProcessingService {
       };
     } catch (error) {
       const errorMessage = 'Error retrieving phone by pan: ' + error.message;
-      console.log(errorMessage);
       throw new Error(errorMessage);
     }
   }
@@ -301,13 +300,12 @@ export class HumoProcessingService {
       });
     } catch (error) {
       responseFromHumo = error.response?.data;
-      console.log(responseFromHumo);
       const jsonfromXml = parser.toJson(responseFromHumo);
       const json = JSON.parse(jsonfromXml);
       const errorCode =
-        json['SOAP-ENV:Body']?.['SOAP-ENV:Fault']?.['detail']?.[
-          'ebppif1:PaymentServerException'
-        ]?.['error'];
+        json['SOAP-ENV:Envelope']?.['SOAP-ENV:Body']?.['SOAP-ENV:Fault']?.[
+          'detail'
+        ]?.['ebppif1:PaymentServerException']?.['error'];
 
       return {
         success: false,
@@ -316,7 +314,6 @@ export class HumoProcessingService {
         paymentRefFromHumo: 0,
       };
     }
-    console.log('RESPONSE FROM HOLD REQUEST HUMO: ', responseFromHumo.data);
     const jsonfromXml = parser.toJson(responseFromHumo.data);
     const json =
       JSON.parse(jsonfromXml)['SOAP-ENV:Envelope']['SOAP-ENV:Body'][
@@ -370,9 +367,6 @@ export class HumoProcessingService {
       console.log('Error confirming payment ', error.response.data);
       throw new Error('Error confirming payment ');
     }
-
-    console.log('HUMO CONFIRM PAYMENT RESPONSE: ', responseFromHumo.data);
-
     const jsonFromXml = parser.toJson(responseFromHumo.data);
     const json = JSON.parse(jsonFromXml);
     const action =
@@ -438,7 +432,6 @@ export class HumoProcessingService {
       });
       return;
     } catch (error) {
-      console.log(error);
       throw new Error('Error refunding payment');
     }
   }
@@ -585,10 +578,6 @@ export class HumoProcessingService {
       });
       return response.data;
     } catch (error) {
-      console.log(
-        'Error getting data by transaction id humo',
-        error.response?.data || error.message,
-      );
       throw new Error(error.message);
     }
   }

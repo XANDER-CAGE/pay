@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotAcceptableException,
   NotFoundException,
@@ -268,7 +269,6 @@ export class UzCardProcessingService {
       });
       return { success: true };
     } catch (error) {
-      console.log(error);
       throw new Error('Error refunding');
     }
   }
@@ -346,8 +346,6 @@ export class UzCardProcessingService {
         password: this.uzCardPassword,
       },
     });
-
-    console.log('PAY BY TOKEN RESPONSE: ', response.data);
     // const { fullName, phone } = await this.getDataByProcessingCardToken(
     //   cardInfo.processing_id,
     // );
@@ -430,7 +428,7 @@ export class UzCardProcessingService {
         phone,
       };
     } catch (error) {
-      console.log('ERROR GETTING PROCESSING CARD DATA BY TOKEN UZCARD', error);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -452,10 +450,6 @@ export class UzCardProcessingService {
       });
       return response.data;
     } catch (error) {
-      console.log(
-        'error getting data by transaction id uzcard',
-        error.response?.data || error.message,
-      );
       throw new Error(error.message);
     }
   }
