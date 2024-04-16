@@ -6,13 +6,14 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { HumoProcessingService } from './humoProcessing.service';
 import { ISendOtp } from './interfaces/sendOtpResponse.interface';
-import { payment, processing_enum } from '@prisma/client';
+import { card_info, payment, processing_enum } from '@prisma/client';
 import { UzCardProcessingService } from './uzCardProcessing.service';
 import { CardType } from 'src/common/enum/cardType.enum';
 import { DecryptService } from '../decrypt/decrypt.service';
 import { PayByTokenDto } from '../payments/dto/payByToken.dto';
 import { MyReq } from 'src/common/interfaces/myReq.interface';
 import * as crypto from 'crypto';
+import { CoreApiResponse } from 'src/common/classes/model.class';
 
 interface IDetermineProcessing {
   bankName: string;
@@ -33,38 +34,9 @@ interface IValidate {
   aacct?: any;
   par?: any;
 }
-
-interface IHandle3dsPost {
-  PublicId: string;
-  AccountId: string;
-  CardFirstSix: string;
-  CardLastFour: string;
-  CardHolderName: string;
-  CardToken: string;
-  Status: 'Declined' | 'Completed';
-  Reason?: string | null;
-  Processing: CardType;
-  Expiry: string;
-  Success: boolean;
-  BankName?: string;
-}
-
-interface IPayByToken {
-  PublicId: string;
-  AccountId: string;
-  CardFirstSix: string;
-  CardLastFour: string;
-  CardHolderName: string;
-  CardToken: string;
-  Status: 'Declined' | 'Completed';
-  Reason?: string | null;
-  ReasonCode?: number | null;
-  Processing: CardType | null;
-  Expiry: string;
-  Success: boolean;
-  BankName?: string;
-  TransactionId: number;
-  Phone: string;
+interface IGetDataByCardInfo {
+  fullname: string;
+  phone: string;
 }
 
 @Injectable()
@@ -128,15 +100,15 @@ export class ProcessingService {
     return data;
   }
 
-  async handle3dsPost(payment: payment, pan: string): Promise<IHandle3dsPost> {
+  async handle3dsPost(payment: payment, pan: string): Promise<CoreApiResponse> {
     const { processing, bankName } = await this.determine(pan);
-    let data: IHandle3dsPost;
+    let data: CoreApiResponse;
     if (processing == 'uzcard') {
       data = await this.uzCardService.handle3dsPost(payment);
     } else if (processing == 'humo') {
       data = await this.humoService.handle3dsPost(payment);
     }
-    data.BankName = bankName;
+    data.Model.GatewayName = bankName;
     return data;
   }
 
@@ -163,62 +135,96 @@ export class ProcessingService {
     }
   }
 
-  async payByCard(dto: PayByTokenDto, req: MyReq): Promise<IPayByToken> {
+  async payByCard(dto: PayByTokenDto, req: MyReq): Promise<CoreApiResponse> {
     const cardInfo = await this.prisma.card_info.findFirst({
       where: {
         tk: dto.Token,
       },
     });
     if (!cardInfo) {
-      return {
-        PublicId: null,
-        AccountId: null,
-        CardFirstSix: null,
-        CardLastFour: null,
-        CardHolderName: null,
-        CardToken: dto.Token,
-        Status: 'Declined',
-        Reason: 'No Such Issuer',
-        ReasonCode: 5015,
-        Processing: null,
-        Expiry: '',
-        Success: false,
-        BankName: '',
-        TransactionId: 0,
-        Phone: null,
-      };
+      return CoreApiResponse.issuerNotFound({
+        Amount: +dto.Amount,
+        Date: new Date(),
+        Description: dto.Description,
+        InvoiceId: String(dto.InvoiceId),
+        AccountId: String(dto.AccountId),
+        Token: dto.Token,
+      });
     }
     const { pan } = this.decryptService.decryptCardCryptogram(
       cardInfo.card_cryptogram_packet,
     );
     const { processing, bankName } = await this.determine(pan);
-    let data: IPayByToken;
+    let data: CoreApiResponse;
     if (processing == 'humo') {
       data = await this.humoService.payByToken(dto, req);
     } else if (processing == 'uzcard') {
       data = await this.uzCardService.payByToken(dto, req);
     }
-    data.BankName = bankName;
-    data.CardFirstSix = pan.substring(0, 6);
-    data.CardLastFour = pan.slice(-4);
+    data.Model.GatewayName = bankName;
     if (!cardInfo.fullname || !cardInfo.phone) {
+      const { phone, fullname } = await this.getDataByCardInfo(cardInfo);
       const panRef = crypto.createHash('md5').update(pan).digest('hex');
       await this.prisma.card_info.update({
         where: {
           id: cardInfo.id,
         },
         data: {
-          fullname: data.CardHolderName,
+          fullname,
           pan_ref: panRef,
           account_id: String(dto.AccountId),
-          phone: data.Phone,
+          phone,
         },
       });
     }
     return data;
   }
 
-  async getDataByInvoiceId(invoiceId: string) {
-    return await this.uzCardService.getDataByInvoiceId(invoiceId);
+  async getDataByTransactionId(transactionId: number) {
+    const payment = await this.prisma.payment.findFirst({
+      where: {
+        id: transactionId,
+      },
+    });
+    if (!payment) {
+      throw new NotFoundException('Transaction not found');
+    }
+    const { pan } = this.decryptService.decryptCardCryptogram(
+      payment.card_cryptogram_packet,
+    );
+    const { processing } = await this.determine(pan);
+    if (processing == 'humo') {
+      return await this.humoService.getDataByTransactionId(
+        payment.processing_id,
+      );
+    } else if (processing == 'uzcard') {
+      return await this.uzCardService.getDataByTransactionId(
+        payment.invoice_id,
+      );
+    }
+  }
+
+  private async getDataByCardInfo(
+    cardInfo: card_info,
+  ): Promise<IGetDataByCardInfo> {
+    if (cardInfo.card_type == 'humo') {
+      const { pan } = this.decryptService.decryptCardCryptogram(
+        cardInfo.card_cryptogram_packet,
+      );
+      const { phone, fullname } = await this.humoService.getDataByPan(pan);
+      return {
+        phone,
+        fullname,
+      };
+    } else if (cardInfo.card_type == 'uzcard') {
+      const { phone, fullname } =
+        await this.uzCardService.getDataByProcessingCardToken(
+          cardInfo.processing_id,
+        );
+      return {
+        phone,
+        fullname,
+      };
+    }
   }
 }

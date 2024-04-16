@@ -15,9 +15,10 @@ import { DecryptService } from '../decrypt/decrypt.service';
 import * as parser from 'xml2json';
 import { PayByTokenDto } from '../payments/dto/payByToken.dto';
 import { MyReq } from 'src/common/interfaces/myReq.interface';
+import { CoreApiResponse } from 'src/common/classes/model.class';
 interface IGetDataByPan {
   phone: string;
-  nameOnCard: string;
+  fullname: string;
   expiry: string;
 }
 interface IValidate {
@@ -29,42 +30,10 @@ interface IValidate {
   cardType: CardType;
 }
 interface IHoldRequest {
+  success: boolean;
+  errorCode: number;
   paymentIdFromHumo: string | number;
   paymentRefFromHumo: string | number;
-}
-interface IHandle3dsPost {
-  Currency: string;
-  PublicId: string;
-  AccountId: string;
-  TransactionId: number;
-  InvoiceId: string;
-  IpAddress: string;
-  CardFirstSix: string;
-  CardLastFour: string;
-  CardHolderName: string;
-  CardToken: string;
-  Processing: CardType;
-  Expiry: string;
-  Success: boolean;
-  Status: 'Declined' | 'Completed';
-}
-
-interface IPayByToken {
-  Currency: string;
-  PublicId: string;
-  AccountId: string;
-  TransactionId: number;
-  InvoiceId: string;
-  IpAddress: string;
-  CardFirstSix: string;
-  CardLastFour: string;
-  CardHolderName: string;
-  CardToken: string;
-  Processing: CardType;
-  Expiry: string;
-  Success: boolean;
-  Status: 'Declined' | 'Completed';
-  Phone: string;
 }
 
 export class HumoProcessingService {
@@ -105,7 +74,7 @@ export class HumoProcessingService {
     };
   }
 
-  private async getDataByPan(pan: string): Promise<IGetDataByPan> {
+  async getDataByPan(pan: string): Promise<IGetDataByPan> {
     try {
       const url = this.humoMiddlewareUrl + '/v3/iiacs/card';
       const val = {
@@ -125,12 +94,11 @@ export class HumoProcessingService {
       const { data } = await axios.post(url, val, config);
       return {
         phone: data.result.mb.phone,
-        nameOnCard: data.result.card.nameOnCard,
+        fullname: data.result.card.nameOnCard,
         expiry: data.result.card.expiry,
       };
     } catch (error) {
       const errorMessage = 'Error retrieving phone by pan: ' + error.message;
-      console.log(errorMessage);
       throw new Error(errorMessage);
     }
   }
@@ -162,7 +130,7 @@ export class HumoProcessingService {
     if (otp.code != smsCode) {
       throw new NotAcceptableException('Wrong credentials');
     }
-    const { expiry, nameOnCard, phone } = await this.getDataByPan(pan);
+    const { expiry, fullname, phone } = await this.getDataByPan(pan);
 
     const cardId = crypto
       .createHash('md5')
@@ -172,17 +140,14 @@ export class HumoProcessingService {
     return {
       cardType: CardType.HUMO,
       expiry,
-      fullName: nameOnCard,
+      fullName: fullname,
       pan,
       phone,
       processingId: cardId,
     };
   }
 
-  async handle3dsPost(payment: payment): Promise<IHandle3dsPost> {
-    const { paymentIdFromHumo, paymentRefFromHumo } =
-      await this.holdRequest(payment);
-    await this.confirmPaymentHumo(paymentIdFromHumo, paymentRefFromHumo);
+  async handle3dsPost(payment: payment): Promise<CoreApiResponse> {
     const cashbox = await this.prisma.cashbox.findFirst({
       where: {
         id: payment.cashbox_id,
@@ -195,7 +160,7 @@ export class HumoProcessingService {
         },
       },
     });
-    const { pan, expiry } = this.decrypService.decryptCardCryptogram(
+    const { pan } = this.decrypService.decryptCardCryptogram(
       payment.card_cryptogram_packet,
     );
     const panRef = crypto.createHash('md5').update(pan).digest('hex');
@@ -205,7 +170,47 @@ export class HumoProcessingService {
         account_id: payment.account_id,
       },
     });
-    const { nameOnCard } = await this.getDataByPan(pan);
+    const { success, errorCode, paymentIdFromHumo, paymentRefFromHumo } =
+      await this.holdRequest(payment);
+    const data = {
+      AccountId: payment.account_id,
+      Amount: Number(payment.amount),
+      CardExpDate: cardInfo.expiry,
+      CardType: cardInfo.card_type,
+      Date: payment.created_at,
+      Description: payment.description,
+      GatewayName: 'humo',
+      InvoiceId: payment.invoice_id,
+      IpAddress: payment.ip_address,
+      IpCity: payment.ip_city,
+      IpCountry: payment.ip_country,
+      IpRegion: payment.ip_region,
+      Name: cardInfo.fullname,
+      Pan: pan,
+      PublicId: cashbox.public_id,
+      Token: cardInfo.tk,
+      TransactionId: payment.id,
+    };
+    if (!success) {
+      await this.prisma.payment.update({
+        where: {
+          id: payment.id,
+        },
+        data: {
+          processing: 'humo',
+          status: 'Declined',
+          processing_id: String(paymentRefFromHumo),
+          card_info_id: cardInfo.id,
+        },
+      });
+      if (errorCode == 116) {
+        return CoreApiResponse.insufficentFunds(data);
+      } else {
+        return CoreApiResponse.doNotHonor(data);
+      }
+    }
+
+    await this.confirmPaymentHumo(paymentIdFromHumo, paymentRefFromHumo);
     await this.prisma.payment.update({
       where: {
         id: payment.id,
@@ -214,91 +219,77 @@ export class HumoProcessingService {
         processing: 'humo',
         status: 'Completed',
         processing_id: String(paymentRefFromHumo),
+        card_info_id: cardInfo.id,
       },
     });
-    return {
-      Currency: payment.currency,
-      PublicId: cashbox.public_id,
-      AccountId: cashbox.company.account_id,
-      TransactionId: payment.id,
-      InvoiceId: payment.invoice_id,
-      IpAddress: payment.ip_address,
-      CardFirstSix: pan.substring(0, 6),
-      CardLastFour: pan.slice(-4),
-      CardHolderName: nameOnCard,
-      CardToken: cardInfo.tk,
-      Processing: CardType.HUMO,
-      Expiry: expiry,
-      Success: true,
-      Status: 'Completed',
-    };
+    return CoreApiResponse.success(data);
   }
 
   private async holdRequest(payment: payment): Promise<IHoldRequest> {
+    const epos = await this.prisma.epos.findFirst({
+      where: {
+        cashbox_id: payment.cashbox_id,
+        type: 'humo',
+      },
+    });
+    if (!epos) {
+      throw new NotFoundException('EPOS for Humo not found');
+    }
+    const { pan, expiry } = this.decrypService.decryptCardCryptogram(
+      payment.card_cryptogram_packet,
+    );
+    const amountWidth100 = +payment.amount * 100;
+    const xml = `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-
+    ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema -
+    instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ebppif1="urn:PaymentServer">
+    <SOAP-ENV:Body>
+    <ebppif1:Payment>
+    <language>en</language>
+    <billerRef>SOAP_DMS</billerRef>
+    <payinstrRef>SOAP_DMS</payinstrRef>
+    <sessionID>SOAP_DMS_20220106090000</sessionID>
+    <paymentRef>${payment.id}</paymentRef>
+    <details>
+    <item>
+    <name>pan</name>
+    <value>${pan}</value>
+    </item>
+    <item>
+    <name>expiry</name>
+    <value>${expiry}</value>
+    </item>
+    <item>
+    <name>ccy_code</name>
+    <value>860</value>
+    </item>
+    <item>
+    <name>amount</name>
+    <value>${amountWidth100}</value>
+    </item>
+    <item>
+    <name>merchant_id</name>
+    <value>${epos.merchant_id}</value>
+    </item>
+    <item>
+    <name>terminal_id</name>
+    <value>${epos.terminal_id}</value>
+    </item>
+    <item>
+    <name>point_code</name>
+    <value>${this.humoSoapPointCode}</value>
+    </item>
+    <item>
+    <name>centre_id</name>
+    <value>${this.humoSoapCenterId}</value>
+    </item>
+    </details>
+    <paymentOriginator>${this.humoSoapUsername}</paymentOriginator>
+    </ebppif1:Payment>
+    </SOAP-ENV:Body>
+    </SOAP-ENV:Envelope>`;
+    let responseFromHumo: any;
     try {
-      const epos = await this.prisma.epos.findFirst({
-        where: {
-          cashbox_id: payment.cashbox_id,
-          type: 'humo',
-        },
-      });
-      if (!epos) {
-        throw new NotFoundException('EPOS for Humo not found');
-      }
-      const { pan, expiry } = this.decrypService.decryptCardCryptogram(
-        payment.card_cryptogram_packet,
-      );
-      const amountWidth100 = +payment.amount * 100;
-      const xml = `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-
-      ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema -
-      instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ebppif1="urn:PaymentServer">
-      <SOAP-ENV:Body>
-      <ebppif1:Payment>
-      <language>en</language>
-      <billerRef>SOAP_DMS</billerRef>
-      <payinstrRef>SOAP_DMS</payinstrRef>
-      <sessionID>SOAP_DMS_20220106090000</sessionID>
-      <paymentRef>${payment.id}</paymentRef>
-      <details>
-      <item>
-      <name>pan</name>
-      <value>${pan}</value>
-      </item>
-      <item>
-      <name>expiry</name>
-      <value>${expiry}</value>
-      </item>
-      <item>
-      <name>ccy_code</name>
-      <value>860</value>
-      </item>
-      <item>
-      <name>amount</name>
-      <value>${amountWidth100}</value>
-      </item>
-      <item>
-      <name>merchant_id</name>
-      <value>${epos.merchant_id}</value>
-      </item>
-      <item>
-      <name>terminal_id</name>
-      <value>${epos.terminal_id}</value>
-      </item>
-      <item>
-      <name>point_code</name>
-      <value>${this.humoSoapPointCode}</value>
-      </item>
-      <item>
-      <name>centre_id</name>
-      <value>${this.humoSoapCenterId}</value>
-      </item>
-      </details>
-      <paymentOriginator>${this.humoSoapUsername}</paymentOriginator>
-      </ebppif1:Payment>
-      </SOAP-ENV:Body>
-      </SOAP-ENV:Envelope>`;
-
-      const jsonData: any = await axios.post(this.humoSoapUrl, xml, {
+      responseFromHumo = await axios.post(this.humoSoapUrl, xml, {
         headers: {
           'Content-Type': 'text/xml',
         },
@@ -307,36 +298,48 @@ export class HumoProcessingService {
           password: this.humoSoapPassword,
         },
       });
-      const jsonfromXml = parser.toJson(jsonData.data);
-      const json =
-        JSON.parse(jsonfromXml)['SOAP-ENV:Envelope']['SOAP-ENV:Body'][
-          'ebppif1:PaymentResponse'
-        ];
-      const paymentID = json.paymentID;
-      const paymentRef = json.paymentRef;
-      const action = json.action;
-
-      if (action != 4) {
-        throw new BadRequestException(
-          'Fail. Check your credentials and try again',
-        );
-      }
-      return {
-        paymentIdFromHumo: paymentID,
-        paymentRefFromHumo: paymentRef,
-      };
     } catch (error) {
-      console.log('Error holding payment ', error?.response?.data);
-      throw new Error('Error holding payment ');
+      responseFromHumo = error.response?.data;
+      const jsonfromXml = parser.toJson(responseFromHumo);
+      const json = JSON.parse(jsonfromXml);
+      const errorCode =
+        json['SOAP-ENV:Envelope']?.['SOAP-ENV:Body']?.['SOAP-ENV:Fault']?.[
+          'detail'
+        ]?.['ebppif1:PaymentServerException']?.['error'];
+
+      return {
+        success: false,
+        errorCode,
+        paymentIdFromHumo: 0,
+        paymentRefFromHumo: 0,
+      };
     }
+    const jsonfromXml = parser.toJson(responseFromHumo.data);
+    const json =
+      JSON.parse(jsonfromXml)['SOAP-ENV:Envelope']['SOAP-ENV:Body'][
+        'ebppif1:PaymentResponse'
+      ];
+    const paymentID = json.paymentID;
+    const paymentRef = json.paymentRef;
+    const action = json.action;
+    if (action != 4) {
+      throw new BadRequestException(
+        'Fail. Check your credentials and try again',
+      );
+    }
+    return {
+      success: true,
+      errorCode: null,
+      paymentIdFromHumo: paymentID,
+      paymentRefFromHumo: paymentRef,
+    };
   }
 
-  async confirmPaymentHumo(
+  private async confirmPaymentHumo(
     paymentIDFromHumo: string | number,
     paymentRefFromHumo: string | number,
   ) {
-    try {
-      const xml = `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-
+    const xml = `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-
       ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-
       instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ebppif1="urn:PaymentServer">
       <SOAP-ENV:Body>
@@ -349,8 +352,9 @@ export class HumoProcessingService {
       </ebppif1:Payment>
       </SOAP-ENV:Body>
       </SOAP-ENV:Envelope>`;
-
-      const response = await axios.post(this.humoSoapUrl, xml, {
+    let responseFromHumo: any;
+    try {
+      responseFromHumo = await axios.post(this.humoSoapUrl, xml, {
         headers: {
           'Content-Type': 'text/xml',
         },
@@ -359,21 +363,19 @@ export class HumoProcessingService {
           password: this.humoSoapPassword,
         },
       });
-      const jsonData = parser.toJson(response.data);
-      const json = JSON.parse(jsonData);
-      const action =
-        json['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ebppif1:PaymentResponse']
-          .action;
-      if (action != 10) {
-        throw new BadRequestException(
-          'Fail. Check your credentials and try again',
-        );
-      }
-
-      return;
     } catch (error) {
-      console.log('Error confirming payment ', error?.response?.data);
+      console.log('Error confirming payment ', error.response.data);
       throw new Error('Error confirming payment ');
+    }
+    const jsonFromXml = parser.toJson(responseFromHumo.data);
+    const json = JSON.parse(jsonFromXml);
+    const action =
+      json['SOAP-ENV:Envelope']['SOAP-ENV:Body']['ebppif1:PaymentResponse']
+        .action;
+    if (action != 10) {
+      throw new BadRequestException(
+        'Fail. Check your credentials and try again',
+      );
     }
   }
 
@@ -430,12 +432,11 @@ export class HumoProcessingService {
       });
       return;
     } catch (error) {
-      console.log(error);
       throw new Error('Error refunding payment');
     }
   }
 
-  async payByToken(dto: PayByTokenDto, req: MyReq): Promise<IPayByToken> {
+  async payByToken(dto: PayByTokenDto, req: MyReq): Promise<CoreApiResponse> {
     const cardInfo = await this.prisma.card_info.findFirst({
       where: {
         tk: dto.Token,
@@ -466,13 +467,78 @@ export class HumoProcessingService {
         },
       },
     });
-    const { paymentIdFromHumo, paymentRefFromHumo } =
-      await this.holdRequest(payment);
-    await this.confirmPaymentHumo(paymentIdFromHumo, paymentRefFromHumo);
-    const { pan, expiry } = this.decrypService.decryptCardCryptogram(
+    const { pan } = this.decrypService.decryptCardCryptogram(
       payment.card_cryptogram_packet,
     );
-    const { nameOnCard, phone } = await this.getDataByPan(pan);
+    // const { nameOnCard, phone } = await this.getDataByPan(pan);
+    const { success, errorCode, paymentIdFromHumo, paymentRefFromHumo } =
+      await this.holdRequest(payment);
+
+    const data = {
+      AccountId: payment.account_id,
+      Amount: Number(payment.amount),
+      CardExpDate: cardInfo.expiry,
+      CardType: cardInfo.card_type,
+      Date: payment.created_at,
+      Description: payment.description,
+      GatewayName: 'humo',
+      InvoiceId: payment.invoice_id,
+      IpAddress: payment.ip_address,
+      IpCity: payment.ip_city,
+      IpCountry: payment.ip_country,
+      IpRegion: payment.ip_region,
+      Name: cardInfo.fullname,
+      Pan: pan,
+      PublicId: cashbox.public_id,
+      Token: cardInfo.tk,
+      TransactionId: payment.id,
+    };
+    // 000 Утверждено
+    // 001 Утверждено, честь с идентификацией
+    // 100 Отклонение (общее, без комментариев)
+    // 101 Отклонить, просроченная карта
+    // 102 Снижение, подозрение на мошенничество
+    // 106 Отклонено, допустимые попытки ПИН превышены
+    // 107 Отклонить, обратитесь к эмитенту карты
+    // 108 Отклонить, см. Особые условия эмитента карты
+    // 109 Отклонить, недействительный продавец
+    // 110 Отклонение, недействительная сумма
+    // 111 Отклонение, неверный номер карты
+    // 116 Отклонение, недостаточно средств
+    // 118 Карта не существует
+    // 120 Отклонить, транзакция не разрешена к терминалу
+    // 125 отклонено, карта не действует
+    // 206 Отклонено, карта в блоке (допустимые попытки ПИН превышены)
+    // 208 Отклонено, карта в блоке (потерянная карта)
+    // 209 Отклонено, карта в блоке (украденная карточка)
+    // 500 Статус сообщения: согласовано, в балансе
+    // 501 Сообщение о состоянии: согласовано, не сбалансированно
+    // 502 Статусное сообщение: сумма не сверена, итоги предоставлены
+    // 503 Статусное сообщение: итоги для сверки недоступны
+    // 504 Сообщение о состоянии: не согласовано, итоги предоставлены
+    // 904 Сообщение о причине отклонения: ошибка формата
+    // 915 Сообщение о причине отклонения: ошибка переключения или контрольной
+    // точки
+    // 916 Сообщение о причине отклонения: MAC неверный
+    if (!success) {
+      await this.prisma.payment.update({
+        where: {
+          id: payment.id,
+        },
+        data: {
+          processing: 'humo',
+          status: 'Declined',
+          processing_id: String(paymentRefFromHumo),
+        },
+      });
+      if (errorCode == 116) {
+        return CoreApiResponse.insufficentFunds(data);
+      } else {
+        return CoreApiResponse.doNotHonor(data);
+      }
+    }
+
+    await this.confirmPaymentHumo(paymentIdFromHumo, paymentRefFromHumo);
     await this.prisma.payment.update({
       where: {
         id: payment.id,
@@ -483,22 +549,36 @@ export class HumoProcessingService {
         processing_id: String(paymentRefFromHumo),
       },
     });
-    return {
-      Currency: payment.currency,
-      PublicId: cashbox.public_id,
-      AccountId: cashbox.company.account_id,
-      TransactionId: payment.id,
-      InvoiceId: payment.invoice_id,
-      IpAddress: payment.ip_address,
-      CardFirstSix: pan.substring(0, 6),
-      CardLastFour: pan.slice(-4),
-      CardHolderName: nameOnCard,
-      CardToken: cardInfo.tk,
-      Processing: CardType.HUMO,
-      Expiry: expiry,
-      Success: true,
-      Status: 'Completed',
-      Phone: phone,
-    };
+    return CoreApiResponse.success(data);
+  }
+
+  async getDataByTransactionId(processingId: string) {
+    try {
+      const xml = `
+      <SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-
+      ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-
+      instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ebppif1="urn:PaymentServer">
+      <SOAP-ENV:Body>
+      <ebppif1:GetPayment>
+      <paymentRef>${processingId}</paymentRef>
+      <sessionID/>
+      <paymentOriginator>${this.humoSoapUsername}</paymentOriginator>
+      </ebppif1:GetPayment>
+      </SOAP-ENV:Body>
+      </SOAP-ENV:Envelope>
+      `;
+      const response = await axios.post(this.humoSoapUrl, xml, {
+        headers: {
+          'Content-Type': 'text/xml',
+        },
+        auth: {
+          username: this.humoSoapUsername,
+          password: this.humoSoapPassword,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(error.message);
+    }
   }
 }
