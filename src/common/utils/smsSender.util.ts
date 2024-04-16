@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
+import { ISendSuccessSms } from '../interfaces/sendSuccessSms.interface';
 
 @Injectable()
 export class SendSmsWithPlayMobile {
@@ -77,9 +78,19 @@ export class SendSmsWithPlayMobile {
     }
   }
 
-  private cleanMessage(message) {
-    // Implement the same message cleaning logic as in Python code
-    return message; // Replace this with actual cleaning logic
+  cleanMessage(message: string) {
+    return message;
+  }
+
+  async sendSuccessSms(data: ISendSuccessSms) {
+    const balanceAfterTrans = +data.balance - +data.amount * 100;
+    const message = `
+    Humo: ****${data.pan.slice(-4)} 
+    ${new Date().toLocaleString()} 
+    Oplata ${data.amount} sum  
+    ${data.cashboxName} 
+    Balans: ${balanceAfterTrans / 100} sum`;
+    await this.send(data.phone, message);
   }
 }
 
