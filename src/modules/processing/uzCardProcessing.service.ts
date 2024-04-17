@@ -144,7 +144,7 @@ export class UzCardProcessingService {
     if (!company) {
       throw new NotFoundException('Company not found');
     }
-    const { pan } = this.decryptService.decryptCardCryptogram(
+    const { pan, expiry } = this.decryptService.decryptCardCryptogram(
       payment.card_cryptogram_packet,
     );
     const panRef = crypto.createHash('md5').update(pan).digest('hex');
@@ -186,7 +186,7 @@ export class UzCardProcessingService {
     const data = {
       AccountId: payment.account_id,
       Amount: Number(payment.amount),
-      CardExpDate: cardInfo.expiry,
+      CardExpDate: expiry,
       CardType: cardInfo.card_type,
       Date: payment.created_at,
       Description: payment.description,
@@ -342,6 +342,10 @@ export class UzCardProcessingService {
       },
     });
 
+    const { expiry } = this.decryptService.decryptCardCryptogram(
+      cardInfo.card_cryptogram_packet,
+    );
+
     const width = +dto.Amount * 100;
     const requestData = {
       id: 1,
@@ -374,7 +378,7 @@ export class UzCardProcessingService {
     const data = {
       AccountId: payment.account_id,
       Amount: Number(payment.amount),
-      CardExpDate: cardInfo.expiry,
+      CardExpDate: expiry,
       CardType: cardInfo.card_type,
       Date: payment.created_at,
       Description: payment.description,

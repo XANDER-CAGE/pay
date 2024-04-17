@@ -93,13 +93,13 @@ export class SendSmsWithPlayMobile {
     const seconds = ('0' + currentDate.getSeconds()).slice(-2);
     const dateString = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     let processing;
-    if (processing == 'humo') {
+    if (data.processing == 'humo') {
       processing = 'Humo';
-    } else if (processing == 'uzcard') {
+    } else if (data.processing == 'uzcard') {
       processing == 'UzCard';
-    } else if (processing == 'mastercard') {
+    } else if (data.processing == 'mastercard') {
       processing = 'MasterCard';
-    } else if (processing == 'visa') {
+    } else if (data.processing == 'visa') {
       processing = 'Visa';
     }
     const message = `
