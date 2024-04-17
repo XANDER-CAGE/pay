@@ -109,6 +109,8 @@ export class PaymentsService {
       payment.card_cryptogram_packet,
     );
     const data = await this.processingService.handle3dsPost(payment, pan);
+    console.log('Response From processing: ', data);
+
     return data;
   }
 
