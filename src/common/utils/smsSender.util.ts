@@ -92,7 +92,7 @@ export class SendSmsWithPlayMobile {
     const minutes = ('0' + currentDate.getMinutes()).slice(-2);
     const seconds = ('0' + currentDate.getSeconds()).slice(-2);
     const dateString = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-    let processing;
+    let processing: string;
     if (data.processing == 'humo') {
       processing = 'Humo';
     } else if (data.processing == 'uzcard') {
@@ -105,8 +105,7 @@ export class SendSmsWithPlayMobile {
     const message = `
     ${processing}: ****${data.pan.slice(-4)} 
     Data: ${dateString} 
-    Oplata: ${data.amount} sum  
-    Oplata za: ${data.cashboxName} 
+    Oplata: ${data.amount} sum (${data.cashboxName})
     Balans: ${balanceAfterTrans / 100} sum`;
     await this.send(data.phone, message);
   }

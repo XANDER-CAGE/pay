@@ -4,5 +4,5 @@ export interface ISendSuccessSms {
   cashboxName: string;
   pan: string;
   phone: string;
-  processing: string;
+  processing: 'uzcard' | 'humo' | 'visa' | 'mastercard';
 }
