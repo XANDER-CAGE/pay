@@ -96,7 +96,7 @@ export class SendSmsWithPlayMobile {
     if (data.processing == 'humo') {
       processing = 'Humo';
     } else if (data.processing == 'uzcard') {
-      processing == 'UzCard';
+      processing = 'UzCard';
     } else if (data.processing == 'mastercard') {
       processing = 'MasterCard';
     } else if (data.processing == 'visa') {
