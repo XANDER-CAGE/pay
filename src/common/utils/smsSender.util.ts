@@ -84,11 +84,29 @@ export class SendSmsWithPlayMobile {
 
   async sendSuccessSms(data: ISendSuccessSms) {
     const balanceAfterTrans = +data.balance - +data.amount * 100;
+    const currentDate = new Date();
+    const year = currentDate.getFullYear();
+    const month = ('0' + (currentDate.getMonth() + 1)).slice(-2);
+    const day = ('0' + currentDate.getDate()).slice(-2);
+    const hours = ('0' + currentDate.getHours()).slice(-2);
+    const minutes = ('0' + currentDate.getMinutes()).slice(-2);
+    const seconds = ('0' + currentDate.getSeconds()).slice(-2);
+    const dateString = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    let processing;
+    if (processing == 'humo') {
+      processing = 'Humo';
+    } else if (processing == 'uzcard') {
+      processing == 'UzCard';
+    } else if (processing == 'mastercard') {
+      processing = 'MasterCard';
+    } else if (processing == 'visa') {
+      processing = 'Visa';
+    }
     const message = `
-    Humo: ****${data.pan.slice(-4)} 
-    ${new Date().toLocaleString()} 
-    Oplata ${data.amount} sum  
-    ${data.cashboxName} 
+    ${processing}: ****${data.pan.slice(-4)} 
+    Data: ${dateString} 
+    Oplata: ${data.amount} sum  
+    Oplata za: ${data.cashboxName} 
     Balans: ${balanceAfterTrans / 100} sum`;
     await this.send(data.phone, message);
   }

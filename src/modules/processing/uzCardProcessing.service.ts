@@ -244,6 +244,7 @@ export class UzCardProcessingService {
       cashboxName: cashbox.name,
       pan,
       phone,
+      processing: 'uzcard',
     });
     return CoreApiResponse.success(data);
   }
@@ -427,6 +428,7 @@ export class UzCardProcessingService {
       cashboxName: cashbox.name,
       pan: cardInfo.pan,
       phone,
+      processing: 'uzcard',
     });
     return CoreApiResponse.success(data);
   }

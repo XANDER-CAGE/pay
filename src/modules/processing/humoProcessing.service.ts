@@ -232,6 +232,7 @@ export class HumoProcessingService {
       cashboxName: cashbox.name,
       pan,
       phone,
+      processing: 'humo',
     });
     return CoreApiResponse.success(data);
   }
@@ -568,6 +569,7 @@ export class HumoProcessingService {
       pan,
       phone,
       cashboxName: cashbox.name,
+      processing: 'humo',
     });
     return CoreApiResponse.success(data);
   }
