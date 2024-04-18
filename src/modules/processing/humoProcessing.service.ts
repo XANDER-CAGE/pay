@@ -20,6 +20,7 @@ interface IGetDataByPan {
   phone: string;
   fullname: string;
   expiry: string;
+  balance: string;
 }
 interface IValidate {
   processingId: string | number;
@@ -96,10 +97,10 @@ export class HumoProcessingService {
         phone: data.result.mb.phone,
         fullname: data.result.card.nameOnCard,
         expiry: data.result.card.expiry,
+        balance: data.result.balance.availableAmount,
       };
     } catch (error) {
-      const errorMessage = 'Error retrieving phone by pan: ' + error.message;
-      throw new Error(errorMessage);
+      throw new Error('Error retrieving phone by pan');
     }
   }
 
@@ -163,6 +164,7 @@ export class HumoProcessingService {
     const { pan } = this.decrypService.decryptCardCryptogram(
       payment.card_cryptogram_packet,
     );
+    const { balance, phone } = await this.getDataByPan(pan);
     const panRef = crypto.createHash('md5').update(pan).digest('hex');
     const cardInfo = await this.prisma.card_info.findFirst({
       where: {
@@ -201,6 +203,7 @@ export class HumoProcessingService {
           status: 'Declined',
           processing_id: String(paymentRefFromHumo),
           card_info_id: cardInfo.id,
+          last_amount: balance,
         },
       });
       if (errorCode == 116) {
@@ -220,7 +223,16 @@ export class HumoProcessingService {
         status: 'Completed',
         processing_id: String(paymentRefFromHumo),
         card_info_id: cardInfo.id,
+        last_amount: balance,
       },
+    });
+    await this.smsSender.sendSuccessSms({
+      amount: Number(payment.amount),
+      balance,
+      cashboxName: cashbox.name,
+      pan,
+      phone,
+      processing: 'humo',
     });
     return CoreApiResponse.success(data);
   }
@@ -442,6 +454,10 @@ export class HumoProcessingService {
         tk: dto.Token,
       },
     });
+    const { pan } = this.decrypService.decryptCardCryptogram(
+      cardInfo.card_cryptogram_packet,
+    );
+    const { balance, phone } = await this.getDataByPan(pan);
     const payment = await this.prisma.payment.create({
       data: {
         amount: dto.Amount,
@@ -453,6 +469,7 @@ export class HumoProcessingService {
         cashbox_id: req.cashboxId,
         ip_address: req.ip,
         card_cryptogram_packet: cardInfo.card_cryptogram_packet,
+        last_amount: balance,
       },
     });
     const cashbox = await this.prisma.cashbox.findFirst({
@@ -467,9 +484,6 @@ export class HumoProcessingService {
         },
       },
     });
-    const { pan } = this.decrypService.decryptCardCryptogram(
-      payment.card_cryptogram_packet,
-    );
     // const { nameOnCard, phone } = await this.getDataByPan(pan);
     const { success, errorCode, paymentIdFromHumo, paymentRefFromHumo } =
       await this.holdRequest(payment);
@@ -548,6 +562,14 @@ export class HumoProcessingService {
         status: 'Completed',
         processing_id: String(paymentRefFromHumo),
       },
+    });
+    await this.smsSender.sendSuccessSms({
+      amount: Number(payment.amount),
+      balance,
+      pan,
+      phone,
+      cashboxName: cashbox.name,
+      processing: 'humo',
     });
     return CoreApiResponse.success(data);
   }

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotAcceptableException,
   NotFoundException,
@@ -14,6 +15,7 @@ import * as crypto from 'crypto';
 import { PayByTokenDto } from '../payments/dto/payByToken.dto';
 import { MyReq } from 'src/common/interfaces/myReq.interface';
 import { CoreApiResponse } from 'src/common/classes/model.class';
+import { SendSmsWithPlayMobile } from 'src/common/utils/smsSender.util';
 
 interface IValidate {
   processingId: string | number;
@@ -34,6 +36,7 @@ interface IValidate {
 interface IGetDataByToken {
   fullname: string;
   phone: string;
+  balance: string;
 }
 
 @Injectable()
@@ -42,6 +45,8 @@ export class UzCardProcessingService {
   private readonly uzCardLogin: string;
   private readonly uzCardPassword: string;
   constructor(
+    @Inject(SendSmsWithPlayMobile)
+    private readonly smsSender: SendSmsWithPlayMobile,
     private readonly prisma: PrismaService,
     private readonly decryptService: DecryptService,
   ) {
@@ -139,7 +144,7 @@ export class UzCardProcessingService {
     if (!company) {
       throw new NotFoundException('Company not found');
     }
-    const { pan } = this.decryptService.decryptCardCryptogram(
+    const { pan, expiry } = this.decryptService.decryptCardCryptogram(
       payment.card_cryptogram_packet,
     );
     const panRef = crypto.createHash('md5').update(pan).digest('hex');
@@ -149,6 +154,9 @@ export class UzCardProcessingService {
         account_id: payment.account_id,
       },
     });
+    const { balance, phone } = await this.getDataByProcessingCardToken(
+      cardInfo.processing_id,
+    );
     const width = +payment.amount * 100;
     const requestData = {
       id: 1,
@@ -178,7 +186,7 @@ export class UzCardProcessingService {
     const data = {
       AccountId: payment.account_id,
       Amount: Number(payment.amount),
-      CardExpDate: cardInfo.expiry,
+      CardExpDate: expiry,
       CardType: cardInfo.card_type,
       Date: payment.created_at,
       Description: payment.description,
@@ -209,6 +217,7 @@ export class UzCardProcessingService {
           status: 'Declined',
           processing_id: refNum,
           card_info_id: cardInfo.id,
+          last_amount: balance,
         },
       });
       if (errorCode == 51) {
@@ -226,7 +235,16 @@ export class UzCardProcessingService {
         status: 'Completed',
         processing_id: refNum,
         card_info_id: cardInfo.id,
+        last_amount: balance,
       },
+    });
+    await this.smsSender.sendSuccessSms({
+      amount: Number(payment.amount),
+      balance,
+      cashboxName: cashbox.name,
+      pan,
+      phone,
+      processing: 'uzcard',
     });
     return CoreApiResponse.success(data);
   }
@@ -301,6 +319,9 @@ export class UzCardProcessingService {
         tk: dto.Token,
       },
     });
+    const { balance, phone } = await this.getDataByProcessingCardToken(
+      cardInfo.processing_id,
+    );
     // const { pan, expiry } = this.decryptService.decryptCardCryptogram(
     //   cardInfo.card_cryptogram_packet,
     // );
@@ -317,8 +338,13 @@ export class UzCardProcessingService {
         processing: 'uzcard',
         ip_address: req.ip,
         card_cryptogram_packet: cardInfo.card_cryptogram_packet,
+        last_amount: balance,
       },
     });
+
+    const { expiry } = this.decryptService.decryptCardCryptogram(
+      cardInfo.card_cryptogram_packet,
+    );
 
     const width = +dto.Amount * 100;
     const requestData = {
@@ -352,7 +378,7 @@ export class UzCardProcessingService {
     const data = {
       AccountId: payment.account_id,
       Amount: Number(payment.amount),
-      CardExpDate: cardInfo.expiry,
+      CardExpDate: expiry,
       CardType: cardInfo.card_type,
       Date: payment.created_at,
       Description: payment.description,
@@ -400,6 +426,14 @@ export class UzCardProcessingService {
         processing_id: String(response.data?.result?.refNum),
       },
     });
+    await this.smsSender.sendSuccessSms({
+      amount: Number(payment.amount),
+      balance,
+      cashboxName: cashbox.name,
+      pan: cardInfo.pan,
+      phone,
+      processing: 'uzcard',
+    });
     return CoreApiResponse.success(data);
   }
 
@@ -423,9 +457,11 @@ export class UzCardProcessingService {
       });
       const fullname = response.data?.result[0]?.fullName;
       const phone = response.data?.result[0]?.phone;
+      const balance = response.data?.result[0]?.balance;
       return {
         fullname,
         phone,
+        balance,
       };
     } catch (error) {
       throw new BadRequestException(error.message);

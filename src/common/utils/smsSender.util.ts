@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
+import { ISendSuccessSms } from '../interfaces/sendSuccessSms.interface';
 
 @Injectable()
 export class SendSmsWithPlayMobile {
@@ -77,9 +78,32 @@ export class SendSmsWithPlayMobile {
     }
   }
 
-  private cleanMessage(message) {
-    // Implement the same message cleaning logic as in Python code
-    return message; // Replace this with actual cleaning logic
+  cleanMessage(message: string) {
+    return message;
+  }
+
+  async sendSuccessSms(data: ISendSuccessSms) {
+    const balanceAfterTrans = +data.balance - +data.amount * 100;
+    const currentDate = new Date();
+    const year = currentDate.getFullYear();
+    const month = ('0' + (currentDate.getMonth() + 1)).slice(-2);
+    const day = ('0' + currentDate.getDate()).slice(-2);
+    const hours = ('0' + currentDate.getHours()).slice(-2);
+    const minutes = ('0' + currentDate.getMinutes()).slice(-2);
+    const seconds = ('0' + currentDate.getSeconds()).slice(-2);
+    const dateString = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    let processing: string;
+    if (data.processing == 'humo') {
+      processing = 'Humo';
+    } else if (data.processing == 'uzcard') {
+      processing = 'UzCard';
+    } else if (data.processing == 'mastercard') {
+      processing = 'MasterCard';
+    } else if (data.processing == 'visa') {
+      processing = 'Visa';
+    }
+    const message = `${processing}: ****${data.pan.slice(-4)}\nData: ${dateString}\nOplata: ${data.amount} sum (${data.cashboxName})\nBalans: ${balanceAfterTrans / 100} sum`;
+    await this.send(data.phone, message);
   }
 }
 

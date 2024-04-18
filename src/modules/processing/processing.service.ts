@@ -37,6 +37,7 @@ interface IValidate {
 interface IGetDataByCardInfo {
   fullname: string;
   phone: string;
+  balance: string;
 }
 
 @Injectable()
@@ -211,19 +212,22 @@ export class ProcessingService {
       const { pan } = this.decryptService.decryptCardCryptogram(
         cardInfo.card_cryptogram_packet,
       );
-      const { phone, fullname } = await this.humoService.getDataByPan(pan);
+      const { phone, fullname, balance } =
+        await this.humoService.getDataByPan(pan);
       return {
         phone,
         fullname,
+        balance,
       };
     } else if (cardInfo.card_type == 'uzcard') {
-      const { phone, fullname } =
+      const { phone, fullname, balance } =
         await this.uzCardService.getDataByProcessingCardToken(
           cardInfo.processing_id,
         );
       return {
         phone,
         fullname,
+        balance,
       };
     }
   }

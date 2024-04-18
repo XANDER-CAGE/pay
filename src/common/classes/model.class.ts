@@ -92,68 +92,68 @@ export class CoreApiResponse {
   Model: {
     ReasonCode: number;
     PublicId: string;
-    TerminalUrl: 'https://pay.dnsc.uz';
+    TerminalUrl: string;
     TransactionId: number;
     Amount: number;
     Currency: string;
-    CurrencyCode: 860;
+    CurrencyCode: number;
     PaymentAmount: number;
     PaymentCurrency: string;
-    PaymentCurrencyCode: 0;
+    PaymentCurrencyCode: any;
     InvoiceId: string;
     AccountId: string;
-    Email: null;
+    Email: any;
     Description: string;
-    JsonData: null;
+    JsonData: any;
     CreatedDate: string;
-    PayoutDate: null;
-    PayoutDateIso: null;
-    PayoutAmount: null;
+    PayoutDate: any;
+    PayoutDateIso: any;
+    PayoutAmount: any;
     CreatedDateIso: string;
-    AuthDate: null;
-    AuthDateIso: null;
-    ConfirmDate: null;
-    ConfirmDateIso: null;
-    AuthCode: null;
-    TestMode: false;
-    Rrn: null;
-    OriginalTransactionId: null;
-    FallBackScenarioDeclinedTransactionId: null;
+    AuthDate: any;
+    AuthDateIso: any;
+    ConfirmDate: any;
+    ConfirmDateIso: any;
+    AuthCode: any;
+    TestMode: boolean;
+    Rrn: any;
+    OriginalTransactionId: any;
+    FallBackScenarioDeclinedTransactionId: any;
     IpAddress: string;
     IpCountry: string;
     IpCity: string;
     IpRegion: string;
-    IpDistrict: 'Ташкент';
-    IpLatitude: 0;
-    IpLongitude: 0;
+    IpDistrict: any;
+    IpLatitude: any;
+    IpLongitude: any;
     CardFirstSix: string;
     CardLastFour: string;
     CardExpDate: string;
     CardType: string;
-    CardProduct: null;
-    CardCategory: 'Не определен ()';
+    CardProduct: any;
+    CardCategory: any;
     EscrowAccumulationId: null;
-    IssuerBankCountry: 'UZ';
+    IssuerBankCountry: any;
     Issuer: null;
-    CardTypeCode: 16;
+    CardTypeCode: any;
     Status: string;
-    StatusCode: 5;
-    CultureName: 'uz';
+    StatusCode: any;
+    CultureName: string;
     Reason: string;
     CardHolderMessage: string;
-    Type: 0;
+    Type: number;
     Refunded: boolean;
     Name: string;
     Token: string;
     SubscriptionId: null;
     GatewayName: string;
-    ApplePay: false;
-    AndroidPay: false;
-    WalletType: '';
-    TotalFee: 0;
-    IsLocalOrder: false;
-    Gateway: 53;
-    MasterPass: false;
+    ApplePay: boolean;
+    AndroidPay: boolean;
+    WalletType: string;
+    TotalFee: number;
+    IsLocalOrder: boolean;
+    Gateway: number;
+    MasterPass: boolean;
     InfoShopData: null;
   };
   Success: boolean;
@@ -167,6 +167,44 @@ export class CoreApiResponse {
     const Model = {
       ReasonCode: data.ReasonCode,
       PublicId: data.PublicId,
+      TerminalUrl: 'https://pay.dnsc.uz',
+      CurrencyCode: 860,
+      PaymentCurrencyCode: 0,
+      Email: null,
+      JsonData: null,
+      PayoutDate: null,
+      PayoutDateIso: null,
+      PayoutAmount: null,
+      AuthDate: null,
+      AuthDateIso: null,
+      ConfirmDate: null,
+      ConfirmDateIso: null,
+      AuthCode: null,
+      TestMode: false,
+      Rrn: null,
+      OriginalTransactionId: null,
+      FallBackScenarioDeclinedTransactionId: null,
+      IpDistrict: 'Ташкент',
+      IpLatitude: 0,
+      IpLongitude: 0,
+      CardProduct: null,
+      CardCategory: 'Не определен ()',
+      EscrowAccumulationId: null,
+      IssuerBankCountry: 'UZ',
+      Issuer: null,
+      CardTypeCode: 16,
+      StatusCode: 5,
+      CultureName: 'uz',
+      Type: 0,
+      SubscriptionId: null,
+      ApplePay: false,
+      AndroidPay: false,
+      WalletType: '',
+      TotalFee: 0,
+      IsLocalOrder: false,
+      Gateway: 53,
+      MasterPass: false,
+      InfoShopData: null,
       TransactionId: data.TransactionId,
       Amount: data.Amount,
       Currency: 'UZS',
