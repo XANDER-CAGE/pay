@@ -102,11 +102,7 @@ export class SendSmsWithPlayMobile {
     } else if (data.processing == 'visa') {
       processing = 'Visa';
     }
-    const message = `
-    ${processing}: ****${data.pan.slice(-4)} 
-    Data: ${dateString} 
-    Oplata: ${data.amount} sum (${data.cashboxName})
-    Balans: ${balanceAfterTrans / 100} sum`;
+    const message = `${processing}: ****${data.pan.slice(-4)}\nData: ${dateString}\nOplata: ${data.amount} sum (${data.cashboxName})\nBalans: ${balanceAfterTrans / 100} sum`;
     await this.send(data.phone, message);
   }
 }
