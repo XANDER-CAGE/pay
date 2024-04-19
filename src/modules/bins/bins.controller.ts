@@ -20,7 +20,7 @@ export class BinsController {
     return this.binsService.create(createBinDto);
   }
 
-  @Get('bins/info/:bin')
+  @Get('/info/:bin')
   async findOne(@Param('bin') bin: string) {
     const binInfo = await this.binsService.findOne(bin);
     if (!binInfo) {

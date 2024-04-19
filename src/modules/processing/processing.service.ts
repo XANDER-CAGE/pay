@@ -6,7 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { HumoProcessingService } from './humoProcessing.service';
 import { ISendOtp } from './interfaces/sendOtpResponse.interface';
-import { card_info, payment, processing_enum } from '@prisma/client';
+import { bin, card_info, payment, processing_enum } from '@prisma/client';
 import { UzCardProcessingService } from './uzCardProcessing.service';
 import { CardType } from 'src/common/enum/cardType.enum';
 import { DecryptService } from '../decrypt/decrypt.service';
@@ -14,6 +14,7 @@ import { PayByTokenDto } from '../payments/dto/payByToken.dto';
 import { MyReq } from 'src/common/interfaces/myReq.interface';
 import * as crypto from 'crypto';
 import { CoreApiResponse } from 'src/common/classes/model.class';
+import { readFileSync } from 'fs';
 
 interface IDetermineProcessing {
   bankName: string;
@@ -50,15 +51,31 @@ export class ProcessingService {
   ) {}
 
   private async determine(pan: string): Promise<IDetermineProcessing> {
-    const binFromPan = pan.substring(0, 4);
     try {
-      const bin = await this.prisma.bin.findFirst({
-        where: {
-          bin: {
-            startsWith: binFromPan,
+      const path = __dirname + '/../../common/json/binsObj.json';
+      const binsStr = readFileSync(path, 'utf8');
+      const bins = JSON.parse(binsStr);
+      let bin: bin;
+      bin =
+        bins[pan.substring(0, 8)] ||
+        bins[pan.substring(0, 7)] ||
+        bins[pan.substring(0, 6)] ||
+        bins[pan.substring(0, 4)];
+      console.log(bin);
+      const binFromPan = pan.substring(0, 4);
+      if (!bin) {
+        bin = await this.prisma.bin.findFirst({
+          where: {
+            OR: [
+              { bin: { startsWith: pan.substring(0, 8) } },
+              { bin: { startsWith: pan.substring(0, 7) } },
+              { bin: { startsWith: pan.substring(0, 6) } },
+              { bin: { startsWith: pan.substring(0, 4) } },
+            ],
           },
-        },
-      });
+        });
+      }
+
       if (!bin) {
         const errorMsg = 'BIN не найден в базе данных: ' + binFromPan;
         console.error(errorMsg);
