@@ -5,6 +5,7 @@ import { HumoProcessingService } from './humoProcessing.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { UzCardProcessingService } from './uzCardProcessing.service';
 import { DecryptModule } from '../decrypt/decrypt.module';
+import { BINS_SYMBOL, bins } from 'src/common/parsedCache/parsedCache.bins';
 
 @Module({
   imports: [PrismaModule, DecryptModule],
@@ -17,6 +18,10 @@ import { DecryptModule } from '../decrypt/decrypt.module';
     {
       provide: SendSmsWithPlayMobile,
       useClass: SendSmsWithPlayMobile,
+    },
+    {
+      provide: BINS_SYMBOL,
+      useValue: bins,
     },
   ],
   exports: [ProcessingService],

@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   NotAcceptableException,
   NotFoundException,
@@ -14,8 +15,7 @@ import { PayByTokenDto } from '../payments/dto/payByToken.dto';
 import { MyReq } from 'src/common/interfaces/myReq.interface';
 import * as crypto from 'crypto';
 import { CoreApiResponse } from 'src/common/classes/model.class';
-import { readFileSync } from 'fs';
-import * as path from 'path';
+import { BINS_SYMBOL, binsType } from 'src/common/parsedCache/parsedCache.bins';
 
 interface IDetermineProcessing {
   bankName: string;
@@ -49,20 +49,18 @@ export class ProcessingService {
     private readonly humoService: HumoProcessingService,
     private readonly uzCardService: UzCardProcessingService,
     private readonly decryptService: DecryptService,
+    @Inject(BINS_SYMBOL)
+    private readonly bins: binsType,
   ) {}
 
   private async determine(pan: string): Promise<IDetermineProcessing> {
     try {
-      const dir = path.join(__dirname, '/../../../cache/bins.json');
-      const binsStr = readFileSync(dir, 'utf8');
-      const bins = JSON.parse(binsStr);
       let bin: bin;
       bin =
-        bins[pan.substring(0, 8)] ||
-        bins[pan.substring(0, 7)] ||
-        bins[pan.substring(0, 6)] ||
-        bins[pan.substring(0, 4)];
-      console.log(bin);
+        this.bins[pan.substring(0, 8)] ||
+        this.bins[pan.substring(0, 7)] ||
+        this.bins[pan.substring(0, 6)] ||
+        this.bins[pan.substring(0, 4)];
       const binFromPan = pan.substring(0, 4);
       if (!bin) {
         bin = await this.prisma.bin.findFirst({
