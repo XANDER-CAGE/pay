@@ -53,10 +53,7 @@ export class ProcessingService {
 
   private async determine(pan: string): Promise<IDetermineProcessing> {
     try {
-      const dir = path.join(
-        __dirname,
-        '/../../../src/common/json/binsObj.json',
-      );
+      const dir = path.join(__dirname, '/../../../cache/bins.json');
       const binsStr = readFileSync(dir, 'utf8');
       const bins = JSON.parse(binsStr);
       let bin: bin;
