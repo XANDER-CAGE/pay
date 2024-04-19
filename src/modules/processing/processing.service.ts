@@ -15,6 +15,7 @@ import { MyReq } from 'src/common/interfaces/myReq.interface';
 import * as crypto from 'crypto';
 import { CoreApiResponse } from 'src/common/classes/model.class';
 import { readFileSync } from 'fs';
+import * as path from 'path';
 
 interface IDetermineProcessing {
   bankName: string;
@@ -52,8 +53,11 @@ export class ProcessingService {
 
   private async determine(pan: string): Promise<IDetermineProcessing> {
     try {
-      const path = __dirname + '/../../common/json/binsObj.json';
-      const binsStr = readFileSync(path, 'utf8');
+      const dir = path.join(
+        __dirname,
+        '/../../../src/common/json/binsObj.json',
+      );
+      const binsStr = readFileSync(dir, 'utf8');
       const bins = JSON.parse(binsStr);
       let bin: bin;
       bin =
