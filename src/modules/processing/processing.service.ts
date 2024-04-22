@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   NotAcceptableException,
   NotFoundException,
@@ -6,7 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { HumoProcessingService } from './humoProcessing.service';
 import { ISendOtp } from './interfaces/sendOtpResponse.interface';
-import { card_info, payment, processing_enum } from '@prisma/client';
+import { bin, card_info, payment, processing_enum } from '@prisma/client';
 import { UzCardProcessingService } from './uzCardProcessing.service';
 import { CardType } from 'src/common/enum/cardType.enum';
 import { DecryptService } from '../decrypt/decrypt.service';
@@ -14,6 +15,7 @@ import { PayByTokenDto } from '../payments/dto/payByToken.dto';
 import { MyReq } from 'src/common/interfaces/myReq.interface';
 import * as crypto from 'crypto';
 import { CoreApiResponse } from 'src/common/classes/model.class';
+import { BINS_SYMBOL, binsType } from 'src/common/parsedCache/parsedCache.bins';
 
 interface IDetermineProcessing {
   bankName: string;
@@ -47,18 +49,32 @@ export class ProcessingService {
     private readonly humoService: HumoProcessingService,
     private readonly uzCardService: UzCardProcessingService,
     private readonly decryptService: DecryptService,
+    @Inject(BINS_SYMBOL)
+    private readonly bins: binsType,
   ) {}
 
   private async determine(pan: string): Promise<IDetermineProcessing> {
-    const binFromPan = pan.substring(0, 4);
     try {
-      const bin = await this.prisma.bin.findFirst({
-        where: {
-          bin: {
-            startsWith: binFromPan,
+      let bin: bin;
+      bin =
+        this.bins[pan.substring(0, 8)] ||
+        this.bins[pan.substring(0, 7)] ||
+        this.bins[pan.substring(0, 6)] ||
+        this.bins[pan.substring(0, 4)];
+      const binFromPan = pan.substring(0, 4);
+      if (!bin) {
+        bin = await this.prisma.bin.findFirst({
+          where: {
+            OR: [
+              { bin: { startsWith: pan.substring(0, 8) } },
+              { bin: { startsWith: pan.substring(0, 7) } },
+              { bin: { startsWith: pan.substring(0, 6) } },
+              { bin: { startsWith: pan.substring(0, 4) } },
+            ],
           },
-        },
-      });
+        });
+      }
+
       if (!bin) {
         const errorMsg = 'BIN не найден в базе данных: ' + binFromPan;
         console.error(errorMsg);
