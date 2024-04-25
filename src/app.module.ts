@@ -9,9 +9,14 @@ import { DecryptModule } from './modules/decrypt/decrypt.module';
 import { CheckAreqModule } from './modules/check-areq/check-areq.module';
 import { ValidateModule } from './modules/validate/validate.module';
 import { CardsModule } from './modules/cards/cards.module';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 1000 * 60 * 60,
+    }),
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
     PaymentsModule,
