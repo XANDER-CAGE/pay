@@ -7,6 +7,7 @@ import {
   Body,
   Req,
   Param,
+  Inject,
 } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import * as path from 'path';
@@ -19,6 +20,8 @@ import { AntifraudService } from './antifraud.service';
 import { Handle3dsPostDto } from './dto/handle3dsPost.dto';
 import { RefundDto } from './dto/refund.dto';
 import { PayByTokenDto } from './dto/payByToken.dto';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 @ApiTags('Payments')
 @Controller('payments')
@@ -26,6 +29,7 @@ export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
     private readonly antiFraudservice: AntifraudService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   @UseGuards(AuthGuard)
@@ -41,13 +45,22 @@ export class PaymentsController {
     //     HttpStatus.TOO_MANY_REQUESTS,
     //   );
     // }
-    return this.paymentsService.charge(dto, req);
+    const result = await this.paymentsService.charge(dto, req);
+    return result;
   }
 
   @Post('cards/post3ds')
-  async post3ds(@Body() dto: Handle3dsPostDto) {
-    const response = await this.paymentsService.handle3DSPost(dto);
-    return response;
+  async post3ds(@Body() dto: Handle3dsPostDto, @Req() req: MyReq) {
+    const requestId: string = req.headers['x-request-id'] as string;
+    const cache: string = await this.cacheManager.get(requestId);
+    if (cache) {
+      return JSON.parse(cache);
+    }
+    const result = await this.paymentsService.handle3DSPost(dto);
+    if (requestId) {
+      await this.cacheManager.set(requestId, JSON.stringify(result));
+    }
+    return result;
   }
 
   @Get('publickey')
@@ -71,15 +84,32 @@ export class PaymentsController {
   }
 
   @Post('refund')
-  async refund(@Body() dto: RefundDto) {
-    return await this.paymentsService.refund(dto);
+  async refund(@Body() dto: RefundDto, @Req() req: MyReq) {
+    const requestId: string = req.headers['x-request-id'] as string;
+    const cache: string = await this.cacheManager.get(requestId);
+    if (cache) {
+      return JSON.parse(cache);
+    }
+    const result = await this.paymentsService.refund(dto);
+    if (requestId) {
+      await this.cacheManager.set(requestId, JSON.stringify(result));
+    }
+    return result;
   }
 
   @UseGuards(AuthGuard)
   @Post('tokens/charge')
   async payByToken(@Body() dto: PayByTokenDto, @Req() req: MyReq) {
-    const response = await this.paymentsService.payByToken(dto, req);
-    return response;
+    const requestId: string = req.headers['x-request-id'] as string;
+    const cache: string = await this.cacheManager.get(requestId);
+    if (cache) {
+      return JSON.parse(cache);
+    }
+    const result = await this.paymentsService.payByToken(dto, req);
+    if (requestId) {
+      await this.cacheManager.set(requestId, JSON.stringify(result));
+    }
+    return result;
   }
 
   @Get(':transactionId')
