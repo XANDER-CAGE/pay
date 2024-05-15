@@ -32,7 +32,7 @@ export class PaymentsController {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
-  @UseGuards(AuthGuard)
+  // @UseGuards(AuthGuard)
   @Post('cards/charge')
   async charge(@Body() dto: PaymentChargeDto, @Req() req: MyReq) {
     // const isFraud = await this.antiFraudservice.checkForFraud(

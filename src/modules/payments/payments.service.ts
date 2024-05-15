@@ -25,13 +25,22 @@ export class PaymentsService {
   async charge(dto: PaymentChargeDto, req: MyReq) {
     const { decryptedLogin, expiry, pan } =
       this.decryptService.decryptCardCryptogram(dto.CardCryptogramPacket);
-    if (req.basicAuthLogin !== decryptedLogin) {
-      throw new NotAcceptableException({
-        success: false,
-        code: 11, // Некорректный AccountId
-        error:
-          'Basic Auth login does not match the login in the card cryptogram.',
-      });
+    // if (req.basicAuthLogin !== decryptedLogin) {
+    //   throw new NotAcceptableException({
+    //     success: false,
+    //     code: 11, // Некорректный AccountId
+    //     error:
+    //       'Basic Auth login does not match the login in the card cryptogram.',
+    //   });
+    // }
+    const cashbox = await this.prisma.cashbox.findFirst({
+      where: {
+        public_id: decryptedLogin,
+        status: 'active',
+      },
+    });
+    if (!cashbox) {
+      throw new NotFoundException(`Cashbox with ${decryptedLogin} not found`);
     }
     const ipLocationData = await this.locationService.getLocationByIP(req.ip);
     const payment = await this.prisma.payment.create({
@@ -44,7 +53,7 @@ export class PaymentsService {
         account_id: dto.AccountId,
         name: dto.Name,
         card_cryptogram_packet: dto.CardCryptogramPacket,
-        cashbox_id: req.cashboxId,
+        cashbox_id: cashbox.id,
         ip_country: ipLocationData.country,
         ip_city: ipLocationData.city,
         ip_region: ipLocationData.region,
