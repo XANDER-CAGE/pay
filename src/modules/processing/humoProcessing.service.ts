@@ -173,7 +173,7 @@ export class HumoProcessingService {
       },
     });
     const { success, errorCode, paymentIdFromHumo, paymentRefFromHumo } =
-      await this.holdRequest(payment);
+      await this.holdRequest3ds(payment);
     const data = {
       AccountId: payment.account_id,
       Amount: Number(payment.amount),
@@ -321,6 +321,8 @@ export class HumoProcessingService {
         },
       });
     } catch (error) {
+      console.log('ERROR HUMO RECURRENT ', error.response.data);
+
       responseFromHumo = error.response?.data;
       const jsonfromXml = parser.toJson(responseFromHumo);
       const json = JSON.parse(jsonfromXml);
@@ -611,6 +613,98 @@ export class HumoProcessingService {
       return response.data;
     } catch (error) {
       throw new Error(error.message);
+    }
+  }
+  private async holdRequest3ds(payment: payment): Promise<IHoldRequest> {
+    const epos = await this.prisma.epos.findFirst({
+      where: {
+        cashbox_id: payment.cashbox_id,
+        type: 'humo',
+        is_recurrent: false,
+      },
+    });
+    if (!epos) {
+      throw new NotFoundException('EPOS for Humo not found');
+    }
+    const { pan, expiry } = this.decrypService.decryptCardCryptogram(
+      payment.card_cryptogram_packet,
+    );
+    const amountWidth100 = +payment.amount * 100;
+    const xml = `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-
+    ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema -
+    instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ebppif1="urn:PaymentServer">
+    <SOAP-ENV:Body>
+    <ebppif1:Payment>
+    <language>en</language>
+    <billerRef>SOAP_DMS</billerRef>
+    <payinstrRef>SOAP_DMS</payinstrRef>
+    <sessionID>SOAP_DMS_20220106090000</sessionID>
+    <paymentRef>${payment.id}</paymentRef>
+    <details>
+    <item>
+    <name>pan</name>
+    <value>${pan}</value>
+    </item>
+    <item>
+    <name>expiry</name>
+    <value>${expiry}</value>
+    </item>
+    <item>
+    <name>ccy_code</name>
+    <value>860</value>
+    </item>
+    <item>
+    <name>amount</name>
+    <value>${amountWidth100}</value>
+    </item>
+    <item>
+    <name>merchant_id</name>
+    <value>${epos.merchant_id}</value>
+    </item>
+    <item>
+    <name>terminal_id</name>
+    <value>${epos.terminal_id}</value>
+    </item>
+    <item>
+    <name>point_code</name>
+    <value>${this.humoSoapPointCode}</value>
+    </item>
+    <item>
+    <name>centre_id</name>
+    <value>${this.humoSoapCenterId}</value>
+    </item>
+    </details>
+    <paymentOriginator>${this.humoSoapUsername}</paymentOriginator>
+    </ebppif1:Payment>
+    </SOAP-ENV:Body>
+    </SOAP-ENV:Envelope>`;
+    let responseFromHumo: any;
+    try {
+      responseFromHumo = await axios.post(this.humoSoapUrl, xml, {
+        headers: {
+          'Content-Type': 'text/xml',
+        },
+        auth: {
+          username: this.humoSoapUsername,
+          password: this.humoSoapPassword,
+        },
+      });
+    } catch (error) {
+      console.log('ERROR HUMO 3ds ', error.response.data);
+      responseFromHumo = error.response?.data;
+      const jsonfromXml = parser.toJson(responseFromHumo);
+      const json = JSON.parse(jsonfromXml);
+      const errorCode =
+        json['SOAP-ENV:Envelope']?.['SOAP-ENV:Body']?.['SOAP-ENV:Fault']?.[
+          'detail'
+        ]?.['ebppif1:PaymentServerException']?.['error'];
+
+      return {
+        success: false,
+        errorCode,
+        paymentIdFromHumo: 0,
+        paymentRefFromHumo: 0,
+      };
     }
   }
 }
