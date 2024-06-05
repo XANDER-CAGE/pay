@@ -238,12 +238,22 @@ export class HumoProcessingService {
   }
 
   private async holdRequest(payment: payment): Promise<IHoldRequest> {
-    const epos = await this.prisma.epos.findFirst({
+    let epos = await this.prisma.epos.findFirst({
       where: {
         cashbox_id: payment.cashbox_id,
         type: 'humo',
+        is_recurrent: true,
       },
     });
+    if (!epos) {
+      epos = await this.prisma.epos.findFirst({
+        where: {
+          cashbox_id: payment.cashbox_id,
+          type: 'humo',
+          is_recurrent: false,
+        },
+      });
+    }
     if (!epos) {
       throw new NotFoundException('EPOS for Humo not found');
     }

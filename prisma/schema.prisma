@@ -86,14 +86,15 @@ model company {
 }
 
 model epos {
-  id          Int              @id @default(autoincrement())
-  type        processing_enum?
-  merchant_id String           @db.VarChar(255)
-  terminal_id String           @db.VarChar(255)
-  cashbox_id  Int?
-  created_at  DateTime?        @default(now()) @db.Timestamp(6)
-  updated_at  DateTime?        @default(now()) @db.Timestamp(6)
-  cashbox     cashbox?         @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id           Int              @id @default(autoincrement())
+  type         processing_enum?
+  merchant_id  String           @db.VarChar(255)
+  terminal_id  String           @db.VarChar(255)
+  cashbox_id   Int?
+  created_at   DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at   DateTime?        @default(now()) @db.Timestamp(6)
+  is_recurrent Boolean?
+  cashbox      cashbox?         @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model organization {
