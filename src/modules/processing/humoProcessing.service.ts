@@ -243,6 +243,7 @@ export class HumoProcessingService {
         cashbox_id: payment.cashbox_id,
         type: 'humo',
         is_recurrent: true,
+        is_active: true,
       },
     });
     if (!epos) {
@@ -621,6 +622,7 @@ export class HumoProcessingService {
         cashbox_id: payment.cashbox_id,
         type: 'humo',
         is_recurrent: false,
+        is_active: true,
       },
     });
     if (!epos) {

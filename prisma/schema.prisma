@@ -94,6 +94,7 @@ model epos {
   created_at   DateTime?        @default(now()) @db.Timestamp(6)
   updated_at   DateTime?        @default(now()) @db.Timestamp(6)
   is_recurrent Boolean?
+  is_active    Boolean?
   cashbox      cashbox?         @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
