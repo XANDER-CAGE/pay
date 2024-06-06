@@ -708,5 +708,24 @@ export class HumoProcessingService {
         paymentRefFromHumo: 0,
       };
     }
+    const jsonfromXml = parser.toJson(responseFromHumo.data);
+    const json =
+      JSON.parse(jsonfromXml)['SOAP-ENV:Envelope']['SOAP-ENV:Body'][
+        'ebppif1:PaymentResponse'
+      ];
+    const paymentID = json.paymentID;
+    const paymentRef = json.paymentRef;
+    const action = json.action;
+    if (action != 4) {
+      throw new BadRequestException(
+        'Fail. Check your credentials and try again',
+      );
+    }
+    return {
+      success: true,
+      errorCode: null,
+      paymentIdFromHumo: paymentID,
+      paymentRefFromHumo: paymentRef,
+    };
   }
 }
