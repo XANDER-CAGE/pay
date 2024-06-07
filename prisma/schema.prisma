@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model bin {
+  id             Int              @id @default(autoincrement())
+  bin            Int              @unique
+  logo_url       String?          @db.VarChar
+  bank_name      String?          @db.VarChar
+  currency       String?          @db.VarChar
+  hide_cvv_input Boolean
+  processing     processing_enum?
+  country_code   Int?
+  created_at     DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at     DateTime?        @default(now()) @db.Timestamp(6)
+
+  @@index([bin])
+  @@index([processing])
+}
+
+model card {
+  id                    Int              @id @default(autoincrement())
+  processing_card_token String?          @db.VarChar
+  masked_pan            String?          @db.VarChar
+  expiry                String?          @db.VarChar
+  phone                 String?          @db.VarChar
+  fullname              String?          @db.VarChar
+  processing            processing_enum?
+  tk                    String?          @db.VarChar
+  cryptogram            String           @db.VarChar
+  pan_ref               String?          @unique @db.VarChar
+  bank_name             String?          @db.VarChar
+  status                card_status?
+  created_at            DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?        @default(now()) @db.Timestamp(6)
+  added_cards           added_cards[]
+  otp                   otp?
+  payment               payment[]
+
+  @@index([processing])
+  @@index([tk])
+  @@index([status])
+  @@index([pan_ref])
+}
+
+model cashbox {
+  id                   Int                  @id @default(autoincrement())
+  logo                 String?              @db.VarChar
+  name                 String?              @db.VarChar
+  mode                 cashbox_mode_enum?
+  public_id            String?              @db.VarChar
+  password_api         String?              @db.VarChar
+  status               cashbox_status_enum?
+  support_url          String?              @db.VarChar
+  support_number       String?              @db.VarChar
+  notifications_email  String?              @db.VarChar
+  notifications_number String?              @db.VarChar
+  webhook_url          String?              @db.VarChar
+  company_id           Int?
+  created_at           DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?            @default(now()) @db.Timestamp(6)
+  added_cards          added_cards[]
+  company              company?             @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  epos                 epos[]
+  payment              payment[]
+  session              session[]
+
+  @@index([company_id])
+  @@index([status])
+}
+
+model company {
+  id                Int           @id @default(autoincrement())
+  account_id        String?       @db.VarChar
+  trade_name        String        @db.VarChar
+  legal_name        String        @db.VarChar
+  business_area     String        @db.VarChar
+  tax_id_number     String        @db.VarChar
+  bank_account      String        @db.VarChar
+  director_fullname String        @db.VarChar
+  address           String        @db.VarChar
+  organization_id   Int?
+  created_at        DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at        DateTime?     @default(now()) @db.Timestamp(6)
+  cashbox           cashbox[]
+  organization      organization? @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model epos {
+  id           Int              @id @default(autoincrement())
+  processing   processing_enum?
+  merchant_id  String           @db.VarChar
+  terminal_id  String           @db.VarChar
+  cashbox_id   Int?
+  created_at   DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at   DateTime?        @default(now()) @db.Timestamp(6)
+  is_recurrent Boolean?
+  is_active    Boolean?         @default(true)
+  cashbox      cashbox?         @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([cashbox_id])
+  @@index([processing])
+}
+
+model organization {
+  id         Int       @id @default(autoincrement())
+  name       String    @db.VarChar
+  address    String?   @db.VarChar
+  phone      String?   @db.VarChar
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+  company    company[]
+}
+
+model payment {
+  id                 Int            @id @default(autoincrement())
+  cashbox_id         Int?
+  status_code        Int?
+  reason_code        Int?
+  processing_ref_num String?        @db.VarChar
+  last_amount        Decimal?       @db.Decimal
+  refunded_date      DateTime?      @db.Timestamp(6)
+  card_id            Int?
+  currency           String         @default("860") @db.VarChar
+  amount             Decimal        @db.Decimal
+  invoice_id         String         @db.VarChar
+  description        String?        @db.VarChar
+  status             payment_status
+  hold_id            String?        @db.VarChar
+  hold_amount        Decimal?       @default(0) @db.Decimal
+  fail_reason        String?        @db.VarChar
+  account_id         String?        @db.VarChar
+  ip_id              Int?
+  created_at         DateTime?      @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?      @default(now()) @db.Timestamp(6)
+  card               card?          @relation(fields: [card_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cashbox            cashbox?       @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ip                 ip?            @relation(fields: [ip_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([cashbox_id])
+  @@index([invoice_id])
+  @@index([status])
+  @@index([created_at])
+  @@index([account_id])
+}
+
+model session {
+  id         Int       @id @default(autoincrement())
+  sid        String    @db.VarChar
+  cashbox_id Int?
+  expires    DateTime  @db.Timestamp(6)
+  data       String?
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+  cashbox    cashbox?  @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model ip {
+  id          Int       @id @default(autoincrement())
+  country     String?   @db.VarChar
+  countryCode String?   @db.VarChar
+  region      String?   @db.VarChar
+  regionName  String?   @db.VarChar
+  city        String?   @db.VarChar
+  zip         String?   @db.VarChar
+  lat         Float?
+  lon         Float?
+  timezone    String?   @db.VarChar
+  isp         String?   @db.VarChar
+  org         String?   @db.VarChar
+  as          String?   @db.VarChar
+  ip_address  String?   @db.VarChar
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+  payment     payment[]
+}
+
+model notification {
+  id          Int       @id @default(autoincrement())
+  phone       String?   @db.VarChar
+  message     String?   @db.VarChar
+  success     Boolean?
+  fail_reason String?   @db.VarChar
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model otp {
+  id            Int       @id @default(autoincrement())
+  card_id       Int?      @unique
+  hashed_otp    String?   @db.VarChar
+  ban_count     Int?      @default(0)
+  fail_attempts Int?      @default(0)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  updated_at    DateTime? @default(now()) @db.Timestamp(6)
+  card          card?     @relation(fields: [card_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model added_cards {
+  id         Int       @id @default(autoincrement())
+  card_id    Int?
+  cashbox_id Int?
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+  card       card?     @relation(fields: [card_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cashbox    cashbox?  @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([card_id])
+  @@index([cashbox_id])
+}
+
+enum cashbox_mode_enum {
+  prod
+  stage
+  dev
+}
+
+enum cashbox_status_enum {
+  active
+  deactive
+}
+
+enum payment_status {
+  Authorized
+  Pending
+  Declined
+  Completed
+  Cancelled
+  AwaitingAuthentication
+}
+
+enum processing_enum {
+  uzcard
+  humo
+  visa
+  mastercard
+}
+
+enum card_status {
+  Unapproved
+  Approved
+  Banned
+}
