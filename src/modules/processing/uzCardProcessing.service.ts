@@ -126,6 +126,7 @@ export class UzCardProcessingService {
       where: {
         cashbox_id: payment.cashbox_id,
         type: 'uzcard',
+        is_active: true,
       },
     });
     if (!epos) {
@@ -255,6 +256,7 @@ export class UzCardProcessingService {
         where: {
           cashbox_id: payment.cashbox_id,
           type: 'uzcard',
+          is_active: true,
         },
       });
       if (!epos) {
@@ -296,6 +298,7 @@ export class UzCardProcessingService {
       where: {
         cashbox_id: req.cashboxId,
         type: 'uzcard',
+        is_active: true,
       },
     });
     if (!epos) {
