@@ -59,7 +59,7 @@ export class CardsService {
       return this.createTEST(createCardDto);
     }
     const cashbox = await this.prisma.cashbox.findFirst({
-      where: { id: cashboxId, status: 'active' },
+      where: { id: cashboxId, is_active: true },
     });
     if (!cashbox) {
       throw new NotAcceptableException('Active cashbox not found');
@@ -233,7 +233,7 @@ export class CardsService {
       };
     }
     const cashbox = await this.prisma.cashbox.findFirst({
-      where: { id: cashboxId, status: 'active' },
+      where: { id: cashboxId, is_active: true },
     });
     if (!cashbox) {
       throw new NotAcceptableException('Active cashbox not found');

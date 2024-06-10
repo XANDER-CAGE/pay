@@ -52,22 +52,18 @@ export class PaymentsTESTService {
         updated_at: new Date(),
       },
     });
-    if (cashbox.webhook_url) {
-      if (model.Success) {
-        this.hookService.hook(
-          cashbox.webhook_url + '/pay',
-          'Payment',
-          updatedPayment,
-          card,
-        );
-      } else {
-        this.hookService.hook(
-          cashbox.webhook_url + '/fail',
-          'Payment',
-          updatedPayment,
-          card,
-        );
+    if (model.Success) {
+      const payHook = await this.prisma.hook.findFirst({
+        where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
+      });
+      if (payHook) {
+        this.hookService.hook(payHook.url, 'Payment', updatedPayment, card);
       }
+    } else {
+      const failHook = await this.prisma.hook.findFirst({
+        where: { cashbox_id: cashbox.id, is_active: true, type: 'fail' },
+      });
+      this.hookService.hook(failHook.url, 'Payment', updatedPayment, card);
     }
     return model;
   }
@@ -100,7 +96,7 @@ export class PaymentsTESTService {
     };
   }
 
-  async confirmHoldTEST(payment: payment, amount: number) {
+  async confirmHoldTEST(payment: payment, amount: number, card: card) {
     await this.prisma.payment.update({
       where: {
         id: payment.id,
@@ -111,7 +107,19 @@ export class PaymentsTESTService {
         updated_at: new Date(),
       },
     });
-
+    const confirmHook = await this.prisma.hook.findFirst({
+      where: {
+        cashbox_id: payment.cashbox_id,
+        is_active: true,
+        type: 'confirm',
+      },
+    });
+    if (confirmHook) {
+      const updatedPayment = await this.prisma.payment.findFirst({
+        where: { id: payment.id },
+      });
+      this.hookService.hook(confirmHook.url, 'Payment', updatedPayment, card);
+    }
     return {
       Success: true,
       Message: null,
@@ -191,13 +199,11 @@ export class PaymentsTESTService {
         updated_at: new Date(),
       },
     });
-    if (cashbox.webhook_url) {
-      this.hookService.hook(
-        cashbox.webhook_url + '/pay',
-        'Payment',
-        updatedPayment,
-        card,
-      );
+    const payHook = await this.prisma.hook.findFirst({
+      where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
+    });
+    if (payHook) {
+      this.hookService.hook(payHook.url, 'Payment', updatedPayment, card);
     }
     this.notificationService.sendSuccessSms({
       amount: Number(payment.amount),

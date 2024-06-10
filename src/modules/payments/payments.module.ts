@@ -7,6 +7,8 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { ProcessingModule } from '../processing/processing.module';
 import { CardsModule } from '../cards/cards.module';
 import { HookModule } from '../hook/hook.module';
+import { PaymentsTESTService } from './payments.test.service';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
@@ -15,8 +17,9 @@ import { HookModule } from '../hook/hook.module';
     ProcessingModule,
     CardsModule,
     HookModule,
+    NotificationModule,
   ],
   controllers: [PaymentsController],
-  providers: [PaymentsService, getLocationProvider],
+  providers: [PaymentsService, getLocationProvider, PaymentsTESTService],
 })
 export class PaymentsModule {}

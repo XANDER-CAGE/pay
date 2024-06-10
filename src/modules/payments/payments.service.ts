@@ -78,7 +78,7 @@ export class PaymentsService {
     const { success: cryptoSuccess, decryptedData } =
       this.decryptService.decryptCardCryptogram(data.cardCryptoGramPacket);
     const cashbox = await this.prisma.cashbox.findFirst({
-      where: { public_id: decryptedData.decryptedLogin, status: 'active' },
+      where: { public_id: decryptedData.decryptedLogin, is_active: true },
     });
     if (!cashbox) {
       throw new NotFoundException('Cashbox not found');
@@ -201,9 +201,7 @@ export class PaymentsService {
     const payment = await this.prisma.payment.findFirst({
       where: { id: +dto.TransactionId },
       include: {
-        cashbox: {
-          include: { company: true },
-        },
+        cashbox: { include: { company: true, hook: true } },
         card: true,
         ip: true,
       },
@@ -225,9 +223,12 @@ export class PaymentsService {
     const { decryptedData } = this.decryptService.decryptCardCryptogram(
       card.cryptogram,
     );
-    if (cashbox.webhook_url) {
+    const checkHook = await this.prisma.hook.findFirst({
+      where: { cashbox_id: cashbox.id, is_active: true, type: 'check' },
+    });
+    if (checkHook) {
       const res = await this.hookService.hook(
-        cashbox.webhook_url + '/check',
+        checkHook.url,
         'Payment',
         payment,
         card,
@@ -246,49 +247,16 @@ export class PaymentsService {
         this.cancelCardChargeTimeout(payment.id);
         return model;
       }
-      if (isTest) {
-        const model = await this.testService.handle3dsTEST(
-          payment,
-          card,
-          ip,
-          cashbox,
-        );
-        this.cancelCardChargeTimeout(payment.id);
-        return model;
-      }
-      const resFrom3ds = await this.processingService.handle3dsPost({
-        cashbox,
-        company,
-        pan: decryptedData.pan,
-        payment,
-        expiry: decryptedData.expiry,
-        ip,
-        card,
-      });
-      this.cancelCardChargeTimeout(payment.id);
-      const updatedPayment = await this.prisma.payment.findFirst({
-        where: { id: payment.id },
-      });
-      if (resFrom3ds.Success) {
-        this.hookService.hook(
-          cashbox.webhook_url + '/pay',
-          'Payment',
-          updatedPayment,
-          card,
-        );
-      } else {
-        this.hookService.hook(
-          cashbox.webhook_url + '/fail',
-          'Payment',
-          updatedPayment,
-          card,
-        );
-      }
-      return resFrom3ds;
     }
     if (isTest) {
+      const model = await this.testService.handle3dsTEST(
+        payment,
+        card,
+        ip,
+        cashbox,
+      );
       this.cancelCardChargeTimeout(payment.id);
-      return await this.testService.handle3dsTEST(payment, card, ip, cashbox);
+      return model;
     }
     const resFrom3ds = await this.processingService.handle3dsPost({
       cashbox,
@@ -300,6 +268,24 @@ export class PaymentsService {
       card,
     });
     this.cancelCardChargeTimeout(payment.id);
+    const updatedPayment = await this.prisma.payment.findFirst({
+      where: { id: payment.id },
+    });
+    if (resFrom3ds.Success) {
+      const payHook = await this.prisma.hook.findFirst({
+        where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
+      });
+      if (payHook) {
+        this.hookService.hook(payHook.url, 'Payment', updatedPayment, card);
+      }
+    } else {
+      const failHook = await this.prisma.hook.findFirst({
+        where: { cashbox_id: cashbox.id, is_active: true, type: 'fail' },
+      });
+      if (failHook) {
+        this.hookService.hook(failHook.url, 'Payment', updatedPayment, card);
+      }
+    }
     return resFrom3ds;
   }
 
@@ -369,7 +355,7 @@ export class PaymentsService {
     const cashbox = await this.prisma.cashbox.findFirst({
       where: {
         id: dto.cashboxId,
-        status: 'active',
+        is_active: true,
       },
     });
     const payment = await this.prisma.payment.create({
@@ -431,19 +417,7 @@ export class PaymentsService {
     const card = payment.card;
     const cashbox = payment.cashbox;
     if (card.processing_card_token == 'test') {
-      const res = await this.testService.confirmHoldTEST(payment, dto.Amount);
-      if (cashbox.webhook_url) {
-        const updatedPayment = await this.prisma.payment.findFirst({
-          where: { id: payment.id },
-        });
-        this.hookService.hook(
-          cashbox.webhook_url + '/confirm',
-          'Payment',
-          updatedPayment,
-          card,
-        );
-      }
-      return res;
+      return await this.testService.confirmHoldTEST(payment, dto.Amount, card);
     }
     const processingRes = await this.processingService.confirmHold({
       payment,
@@ -451,18 +425,14 @@ export class PaymentsService {
       cashbox,
       amount: dto.Amount,
     });
-    if (cashbox.webhook_url) {
+    const confirmHook = await this.prisma.hook.findFirst({
+      where: { cashbox_id: cashbox.id, is_active: true, type: 'confirm' },
+    });
+    if (confirmHook) {
       const updatedPayment = await this.prisma.payment.findFirst({
         where: { id: payment.id },
       });
-      if (processingRes.Success) {
-        this.hookService.hook(
-          cashbox.webhook_url + '/confirm',
-          'Payment',
-          updatedPayment,
-          card,
-        );
-      }
+      this.hookService.hook(confirmHook.url, 'Payment', updatedPayment, card);
     }
     if (processingRes.Success) {
       this.cancelHoldTimeout(payment.id);
@@ -523,16 +493,14 @@ export class PaymentsService {
     } else {
       await this.processingService.refund({ payment, card });
     }
-    if (cashbox.webhook_url) {
+    const refundHook = await this.prisma.hook.findFirst({
+      where: { cashbox_id: cashbox.id, is_active: true, type: 'refund' },
+    });
+    if (refundHook) {
       const updatedPayment = await this.prisma.payment.findFirst({
         where: { id: payment.id },
       });
-      this.hookService.hook(
-        cashbox.webhook_url + 'refund',
-        'Refund',
-        updatedPayment,
-        card,
-      );
+      this.hookService.hook(refundHook.url, 'Refund', updatedPayment, card);
     }
     return {
       Model: {
@@ -583,7 +551,7 @@ export class PaymentsService {
       return model;
     }
     const cashbox = await this.prisma.cashbox.findFirst({
-      where: { id: dto.cashboxId, status: 'active' },
+      where: { id: dto.cashboxId, is_active: true },
       include: { company: true },
     });
     const company = cashbox.company;
@@ -621,9 +589,12 @@ export class PaymentsService {
         status: 'Pending',
       },
     });
-    if (cashbox.webhook_url) {
+    const checkHook = await this.prisma.hook.findFirst({
+      where: { cashbox_id: cashbox.id, is_active: true, type: 'check' },
+    });
+    if (checkHook) {
       const res = await this.hookService.hook(
-        cashbox.webhook_url + '/check',
+        checkHook.url,
         'Payment',
         payment,
         card,
@@ -641,49 +612,14 @@ export class PaymentsService {
         });
         return model;
       }
-      if (card.processing_card_token == 'test') {
-        return await this.testService.payByTokenTEST(
-          payment,
-          card,
-          cashbox,
-          ip,
-        );
-      }
-      const { decryptedData } = this.decryptService.decryptCardCryptogram(
-        card.cryptogram,
-      );
-      const processingRes = await this.processingService.payByCard({
-        card,
-        cashbox,
-        ip,
-        payment,
-        pan: decryptedData.pan,
-        expiry: decryptedData.expiry,
-        company,
-      });
-      const updatedPayment = await this.prisma.payment.findFirst({
-        where: { id: payment.id },
-      });
-      if (processingRes.Success) {
-        this.hookService.hook(
-          cashbox.webhook_url + '/pay',
-          'Payment',
-          updatedPayment,
-          card,
-        );
-      } else {
-        this.hookService.hook(
-          cashbox.webhook_url + '/fail',
-          'Payment',
-          updatedPayment,
-          card,
-        );
-      }
+    }
+    if (card.processing_card_token == 'test') {
+      return await this.testService.payByTokenTEST(payment, card, cashbox, ip);
     }
     const { decryptedData } = this.decryptService.decryptCardCryptogram(
       card.cryptogram,
     );
-    return await this.processingService.payByCard({
+    model = await this.processingService.payByCard({
       card,
       cashbox,
       ip,
@@ -692,6 +628,28 @@ export class PaymentsService {
       expiry: decryptedData.expiry,
       company,
     });
+    if (model.Success) {
+      const payHook = await this.prisma.hook.findFirst({
+        where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
+      });
+      if (payHook) {
+        const updatedPayment = await this.prisma.payment.findFirst({
+          where: { id: payment.id },
+        });
+        this.hookService.hook(payHook.url, 'Payment', updatedPayment, card);
+      }
+    } else {
+      const failHook = await this.prisma.hook.findFirst({
+        where: { cashbox_id: cashbox.id, is_active: true, type: 'fail' },
+      });
+      if (failHook) {
+        const updatedPayment = await this.prisma.payment.findFirst({
+          where: { id: payment.id },
+        });
+        this.hookService.hook(failHook.url, 'Payment', updatedPayment, card);
+      }
+    }
+    return model;
   }
 
   async getDataByByTransactionId(transactionId: number) {

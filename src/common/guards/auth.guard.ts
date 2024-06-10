@@ -25,7 +25,7 @@ export class AuthGuard implements CanActivate {
     );
     const [public_id, password_api] = credentials.split(':');
     const cashbox = await this.prisma.cashbox.findFirst({
-      where: { public_id, password_api, status: 'active' },
+      where: { public_id, password_api },
     });
     if (!cashbox) {
       throw new UnauthorizedException({
@@ -34,7 +34,7 @@ export class AuthGuard implements CanActivate {
         error: 'InvalidAccountId',
       });
     }
-    if (cashbox.status === 'deactive') {
+    if (cashbox.is_active != true) {
       throw new ForbiddenException('Учетная запись деактивирована');
     }
     let session = await this.prisma.session.findFirst({

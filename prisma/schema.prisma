@@ -49,29 +49,29 @@ model card {
 }
 
 model cashbox {
-  id                   Int                  @id @default(autoincrement())
-  logo                 String?              @db.VarChar
-  name                 String?              @db.VarChar
+  id                   Int                @id @default(autoincrement())
+  logo                 String?            @db.VarChar
+  name                 String?            @db.VarChar
   mode                 cashbox_mode_enum?
-  public_id            String?              @db.VarChar
-  password_api         String?              @db.VarChar
-  status               cashbox_status_enum?
-  support_url          String?              @db.VarChar
-  support_number       String?              @db.VarChar
-  notifications_email  String?              @db.VarChar
-  notifications_number String?              @db.VarChar
-  webhook_url          String?              @db.VarChar
+  public_id            String?            @db.VarChar
+  password_api         String?            @db.VarChar
+  is_active            Boolean?
+  support_url          String?            @db.VarChar
+  support_number       String?            @db.VarChar
+  notifications_email  String?            @db.VarChar
+  notifications_number String?            @db.VarChar
   company_id           Int?
-  created_at           DateTime?            @default(now()) @db.Timestamp(6)
-  updated_at           DateTime?            @default(now()) @db.Timestamp(6)
+  created_at           DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?          @default(now()) @db.Timestamp(6)
   added_cards          added_cards[]
-  company              company?             @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  company              company?           @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   epos                 epos[]
+  hook                 hook[]
   payment              payment[]
   session              session[]
 
   @@index([company_id])
-  @@index([status])
+  @@index([is_active])
 }
 
 model company {
@@ -97,10 +97,10 @@ model epos {
   merchant_id  String           @db.VarChar
   terminal_id  String           @db.VarChar
   cashbox_id   Int?
-  created_at   DateTime?        @default(now()) @db.Timestamp(6)
-  updated_at   DateTime?        @default(now()) @db.Timestamp(6)
   is_recurrent Boolean?
   is_active    Boolean?         @default(true)
+  created_at   DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at   DateTime?        @default(now()) @db.Timestamp(6)
   cashbox      cashbox?         @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([cashbox_id])
@@ -214,15 +214,25 @@ model added_cards {
   @@index([cashbox_id])
 }
 
+model hook {
+  id         Int       @id @default(autoincrement())
+  cashbox_id Int?
+  type       hook_type
+  url        String    @db.VarChar
+  is_active  Boolean?
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  updated_at DateTime? @default(now()) @db.Timestamp(6)
+  cashbox    cashbox?  @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([cashbox_id])
+  @@index([is_active])
+  @@index([type])
+}
+
 enum cashbox_mode_enum {
   prod
   stage
   dev
-}
-
-enum cashbox_status_enum {
-  active
-  deactive
 }
 
 enum payment_status {
@@ -245,4 +255,14 @@ enum card_status {
   Unapproved
   Approved
   Banned
+}
+
+enum hook_type {
+  check
+  pay
+  fail
+  recurrent
+  cancel
+  confirm
+  refund
 }
