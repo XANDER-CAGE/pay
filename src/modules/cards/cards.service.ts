@@ -60,46 +60,46 @@ export class CardsService {
     }
     const cashbox = await this.prisma.cashbox.findFirst({
       where: { id: cashboxId, is_active: true },
+      include: { company: { include: { organization: true } } },
     });
     if (!cashbox) {
       throw new NotAcceptableException('Active cashbox not found');
     }
+    const organizationId = cashbox.company.organization_id;
     const { expiry, pan } = decryptedData;
     const tk = crypto
       .createHash('md5')
       .update(pan + Date.now())
       .digest('hex');
     const panRef = crypto.createHash('md5').update(pan).digest('hex');
+    let card: card;
     const existingCard = await this.prisma.card.findFirst({
-      where: { pan_ref: panRef },
-      select: { status: true },
-    });
-    if (existingCard && existingCard.status == 'Banned') {
-      return {
-        success: false,
-        data: CoreApiResponse.notPermitted(),
-      };
-    }
-    const card = await this.prisma.card.upsert({
-      where: { pan_ref: panRef },
-      create: {
-        cryptogram,
-        expiry,
-        masked_pan: pan.slice(0, 6) + '******' + pan.slice(-4),
+      where: {
         pan_ref: panRef,
-        tk: 'tk_' + tk,
-        status: 'Unapproved',
-      },
-      update: {
-        updated_at: new Date(),
+        organization_id: organizationId,
       },
     });
-    this.prisma.added_cards.create({
-      data: {
-        card_id: card.id,
-        cashbox_id: cashboxId,
-      },
-    });
+    if (!existingCard) {
+      card = await this.prisma.card.create({
+        data: {
+          cryptogram,
+          organization_id: organizationId,
+          expiry,
+          masked_pan: pan.slice(0, 6) + '******' + pan.slice(-4),
+          pan_ref: panRef,
+          tk: 'tk_' + tk,
+          status: 'Unapproved',
+        },
+      });
+    } else {
+      if (existingCard.status == 'Banned') {
+        return {
+          success: false,
+          data: CoreApiResponse.notPermitted(),
+        };
+      }
+      card = existingCard;
+    }
     const { otpId, phone } = await this.sendOtp(card, cashbox);
     return {
       success: true,
@@ -234,48 +234,45 @@ export class CardsService {
     }
     const cashbox = await this.prisma.cashbox.findFirst({
       where: { id: cashboxId, is_active: true },
+      include: { company: { include: { organization: true } } },
     });
     if (!cashbox) {
       throw new NotAcceptableException('Active cashbox not found');
     }
+    const organizationId = cashbox.company.organization_id;
     const { expiry, pan } = decryptedData;
     const tk = crypto
       .createHash('md5')
       .update(pan + Date.now())
       .digest('hex');
     const panRef = crypto.createHash('md5').update(pan).digest('hex');
+    let card: card;
     const existingCard = await this.prisma.card.findFirst({
       where: { pan_ref: panRef },
-      select: { status: true },
     });
-    if (existingCard && existingCard.status == 'Banned') {
-      return {
-        success: false,
-        data: CoreApiResponse.notPermitted(),
-      };
+    if (!existingCard) {
+      card = await this.prisma.card.create({
+        data: {
+          cryptogram,
+          expiry,
+          organization_id: organizationId,
+          masked_pan: pan,
+          processing: pan.startsWith('9860') ? 'humo' : 'uzcard',
+          pan_ref: panRef,
+          tk: 'tk_' + tk,
+          status: 'Unapproved',
+          processing_card_token: 'test',
+        },
+      });
+    } else {
+      if (existingCard.status == 'Banned') {
+        return {
+          success: false,
+          data: CoreApiResponse.notPermitted(),
+        };
+      }
+      card = existingCard;
     }
-    const card = await this.prisma.card.upsert({
-      where: { pan_ref: panRef },
-      create: {
-        cryptogram,
-        expiry,
-        masked_pan: pan,
-        processing: pan.startsWith('8600') ? 'uzcard' : 'humo',
-        pan_ref: panRef,
-        tk: 'tk_' + tk,
-        status: 'Unapproved',
-        processing_card_token: 'test',
-      },
-      update: {
-        updated_at: new Date(),
-      },
-    });
-    this.prisma.added_cards.create({
-      data: {
-        card_id: card.id,
-        cashbox_id: cashboxId,
-      },
-    });
     const { otpId, phone } = await this.sendOtpTEST(card, cashbox);
     return {
       success: true,
