@@ -17,6 +17,8 @@ import { ICancelHold } from './interfaces/cancelHold.interface';
 import { IRefund } from './interfaces/refund.interface';
 import { IPayByToken } from './interfaces/payByToken.interface';
 import { IConfirmHoldResponse } from './interfaces/confirmHoldResponse.interface';
+import { IP2P, IP2PRes } from './interfaces/p2p.interface';
+import { IGetDataByPanRes } from './interfaces/getDataByPan.interface';
 
 @Injectable()
 export class ProcessingService {
@@ -133,7 +135,7 @@ export class ProcessingService {
     return data;
   }
 
-  private async getDataByCardInfo(
+  async getDataByCardInfo(
     card: card,
     pan: string,
   ): Promise<IGetDataByCardInfo> {
@@ -238,6 +240,21 @@ export class ProcessingService {
       return await this.uzcardService.getDataByTransactionId(
         transaction.invoice_id,
       );
+    }
+  }
+
+  async p2p(dto: IP2P): Promise<IP2PRes> {
+    if (dto.senderCard.processing == 'uzcard') {
+      return await this.uzcardService.p2p(dto);
+    }
+  }
+
+  async getDataByPan(pan: string): Promise<IGetDataByPanRes> {
+    const { processing } = await this.determine(pan);
+    if (processing == 'humo') {
+      return await this.humoService.getDataByPan(pan);
+    } else if (processing == 'uzcard') {
+      return await this.uzcardService.getDataByPan(pan);
     }
   }
 }

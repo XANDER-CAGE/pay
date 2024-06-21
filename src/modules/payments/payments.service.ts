@@ -59,6 +59,13 @@ interface IPayByToken {
   organizationId: number;
 }
 
+interface IP2P {
+  senderToken: string;
+  receiverPan: string;
+  amount: string;
+  cashboxId: number;
+}
+
 @Injectable()
 export class PaymentsService {
   private readonly cryptoPayTimeout: number;
@@ -716,5 +723,60 @@ export class PaymentsService {
 
   private async cancelHoldTimeout(transactionId: number) {
     this.schedulerRegistry.deleteTimeout(`${transactionId}`);
+  }
+
+  async p2p(dto: IP2P) {
+    const card = await this.prisma.card.findFirst({
+      where: { tk: dto.senderToken, status: 'Approved' },
+    });
+    if (!card) {
+      throw new NotFoundException('Card not found or deactivated');
+    }
+    const { decryptedData } = this.decryptService.decryptCardCryptogram(
+      card.cryptogram,
+    );
+    const { fullname, balance } =
+      await this.processingService.getDataByCardInfo(card, decryptedData.pan);
+    const transaction = await this.prisma.transaction.create({
+      data: {
+        amount: dto.amount,
+        invoice_id: String(Date.now()),
+        status: 'Pending',
+        type: 'p2p',
+        card_id: card.id,
+        cashbox_id: dto.cashboxId,
+        is_test: card.processing_card_token.includes('test'),
+        receiever_pan:
+          dto.receiverPan.slice(0, 6) + '******' + dto.receiverPan.slice(-4),
+        receiver_fullname: fullname,
+        last_amount: +balance / 100,
+      },
+    });
+    const res = await this.processingService.p2p({
+      amount: +dto.amount,
+      cashboxId: dto.cashboxId,
+      receiverPan: dto.receiverPan,
+      senderCard: card,
+      transactionId: transaction.id,
+    });
+    if (res.success) {
+      await this.prisma.transaction.update({
+        where: { id: transaction.id },
+        data: {
+          status: 'Completed',
+          processing_ref_num: res.refNum,
+        },
+      });
+      return res;
+    }
+    await this.prisma.transaction.update({
+      where: { id: transaction.id },
+      data: {
+        status: 'Cancelled',
+        fail_reason: res.message,
+        reason_code: res.code,
+      },
+    });
+    return res;
   }
 }

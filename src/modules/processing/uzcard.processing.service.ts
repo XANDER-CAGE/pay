@@ -11,7 +11,7 @@ import { CardType } from 'src/common/enum/cardType.enum';
 import { CoreApiResponse } from 'src/common/classes/model.class';
 import { IHandle3ds } from './interfaces/handle3ds.interface';
 import { IHold } from './interfaces/hold.interface';
-import { cashbox, transaction } from '@prisma/client';
+import { card, cashbox, transaction } from '@prisma/client';
 import { IPayByToken } from './interfaces/payByToken.interface';
 import { NotificationService } from '../notification/notification.service';
 import { IConfirmHoldResponse } from './interfaces/confirmHoldResponse.interface';
@@ -21,11 +21,27 @@ interface IGetDataByToken {
   phone: string;
   balance: string;
 }
-
 interface IConfirmHold {
   cashbox: cashbox;
   transaction: transaction;
   amount: number;
+}
+interface IGetDataByPanRes {
+  fullname: string;
+}
+interface IP2P {
+  senderCard: card;
+  receiverPan: string;
+  amount: number;
+  transactionId: number;
+  cashboxId: number;
+}
+
+interface IP2PRes {
+  success: boolean;
+  message: string;
+  code: number;
+  refNum: string;
 }
 
 @Injectable()
@@ -33,6 +49,8 @@ export class UzcardProcessingService {
   private readonly uzCardUrl: string;
   private readonly uzCardLogin: string;
   private readonly uzCardPassword: string;
+  private readonly comissionPercent: number;
+  private readonly p2pCashboxId: number;
   constructor(
     private readonly notificationService: NotificationService,
     private readonly prisma: PrismaService,
@@ -40,6 +58,8 @@ export class UzcardProcessingService {
     this.uzCardLogin = process.env.UZCARD_LOGIN;
     this.uzCardPassword = process.env.UZCARD_PASSWORD;
     this.uzCardUrl = process.env.UZCARD_API_URL;
+    this.comissionPercent = +process.env.P2P_COMISSION_IN_PERCENT || 1;
+    this.p2pCashboxId = +process.env.P2P_CASHBOX_ID || 2;
   }
 
   async sendOtp(
@@ -594,7 +614,94 @@ export class UzcardProcessingService {
       });
       return response.data;
     } catch (error) {
-      throw new Error(error.message);
+      throw new Error(error.response.data || error.message);
+    }
+  }
+
+  async getDataByPan(pan: string): Promise<IGetDataByPanRes> {
+    const requestData = {
+      jsonrpc: '2.0',
+      method: 'p2p.info',
+      id: 123,
+      params: {
+        hpan: pan,
+      },
+    };
+    try {
+      const response = await axios.post(this.uzCardUrl, requestData, {
+        auth: {
+          username: this.uzCardLogin,
+          password: this.uzCardPassword,
+        },
+      });
+      return { fullname: response.data.result.EMBOS_NAME };
+    } catch (error) {
+      throw new Error(error.response.data || error.message);
+    }
+  }
+
+  async p2p(dto: IP2P): Promise<IP2PRes> {
+    const amountInTiyin = dto.amount * 100;
+    const epos = await this.prisma.epos.findFirst({
+      where: { cashbox_id: this.p2pCashboxId, processing: 'uzcard' },
+    });
+    if (!epos) {
+      throw new Error('Epos not found');
+    }
+    const requestData = {
+      id: 123,
+      jsonrpc: '2.0',
+      method: 'p2p.universal',
+      params: {
+        p2p: {
+          sender: dto.senderCard.processing_card_token,
+          recipient: dto.receiverPan,
+          amount: amountInTiyin,
+          feeAmount: (amountInTiyin / 100) * this.comissionPercent,
+          ext: dto.transactionId,
+          merchantId: epos.merchant_id,
+          terminalId: epos.terminal_id,
+        },
+      },
+    };
+    try {
+      const response = await axios.post(this.uzCardUrl, requestData, {
+        auth: {
+          username: this.uzCardLogin,
+          password: this.uzCardPassword,
+        },
+      });
+      const failReason = response.data?.error?.message;
+      const statusIsOK = response.data?.result?.status == 'OK';
+      const refNum = response.data?.result?.refNum;
+      const errorCode = response.data?.result?.resp;
+      const refNumExists = refNum && refNum != '000000000000';
+
+      if (failReason || !refNumExists || !statusIsOK) {
+        if (errorCode == 51) {
+          return {
+            success: false,
+            message: 'Insufficient funds',
+            code: 5015,
+            refNum: null,
+          };
+        } else {
+          return {
+            success: false,
+            message: 'Do Not Honor',
+            code: 5005,
+            refNum: null,
+          };
+        }
+      }
+      return {
+        success: true,
+        message: null,
+        code: 0,
+        refNum,
+      };
+    } catch (error) {
+      throw error;
     }
   }
 }

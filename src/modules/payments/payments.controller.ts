@@ -21,6 +21,8 @@ import * as fs from 'fs';
 import { RefundDto } from './dto/refund.dto';
 import { PayByTokenDto } from './dto/payByToken.dto';
 import { ConfirmHoldDto } from './dto/confirmHold.dto';
+import { AdminGuard } from 'src/common/guards/admin.guard';
+import { P2PDto } from './dto/p2p.dto';
 
 @Controller('payments')
 export class PaymentsController {
@@ -139,6 +141,24 @@ export class PaymentsController {
       token: dto.Token,
       ip: req['x-real-ip'],
       organizationId: req.organizationId,
+    });
+    if (requestId) {
+      await this.cacheManager.set(requestId, JSON.stringify(result));
+    }
+    return result;
+  }
+
+  @UseGuards(AdminGuard)
+  @Post('tokens/p2p')
+  async p2p(@Body() dto: P2PDto, @Req() req: MyReq) {
+    const requestId: string = req.headers['x-request-id'] as string;
+    const cache: string = await this.cacheManager.get(requestId);
+    if (cache) {
+      return JSON.parse(cache);
+    }
+    const result = await this.paymentsService.p2p({
+      cashboxId: req.cashboxId,
+      ...dto,
     });
     if (requestId) {
       await this.cacheManager.set(requestId, JSON.stringify(result));
