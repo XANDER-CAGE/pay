@@ -45,6 +45,7 @@ interface IHold {
   accountId: string;
   cashboxId: number;
   token: string;
+  organizationId: number;
 }
 
 interface IPayByToken {
@@ -55,6 +56,7 @@ interface IPayByToken {
   accountId: string;
   cashboxId: number;
   token: string;
+  organizationId: number;
 }
 
 @Injectable()
@@ -119,6 +121,7 @@ export class PaymentsService {
           cashbox_id: cashbox.id,
           status: 'Declined',
           reason_code: 7000,
+          type: 'threeds',
           fail_reason: 'Invalid cryptogram packet',
         },
       });
@@ -142,12 +145,15 @@ export class PaymentsService {
       cashboxId: cashbox.id,
       cryptogram: data.cardCryptoGramPacket,
     });
+    const isTest = decryptedData.pan.includes('000000000000');
     if (!cSuccess) {
       await this.prisma.payment.create({
         data: {
           amount: data.amount,
           currency: '860',
           invoice_id: data.invoiceId,
+          type: 'threeds',
+          is_test: isTest,
           ip_id: ipId,
           description: data.description,
           card_id: cData.cardId,
@@ -164,6 +170,8 @@ export class PaymentsService {
       data: {
         amount: data.amount,
         currency: '860',
+        type: 'threeds',
+        is_test: isTest,
         invoice_id: data.invoiceId,
         ip_id: ipId,
         description: data.description,
@@ -291,7 +299,7 @@ export class PaymentsService {
 
   async hold(dto: IHold) {
     const card = await this.prisma.card.findFirst({
-      where: { tk: dto.token },
+      where: { tk: dto.token, organization_id: dto.organizationId },
     });
     let model: CoreApiResponse;
     if (!card) {
@@ -308,6 +316,7 @@ export class PaymentsService {
           amount: dto.amount,
           invoice_id: String(dto.invoiceId),
           status: 'Declined',
+          type: 'hold',
           cashbox_id: dto.cashboxId,
           description: dto.description,
           fail_reason: model.Model.Reason,
@@ -365,6 +374,7 @@ export class PaymentsService {
         invoice_id: dto.invoiceId,
         card_id: card.id,
         status: 'Pending',
+        type: 'hold',
         cashbox_id: dto.cashboxId,
         description: dto.description,
         hold_id: '0',
@@ -524,6 +534,7 @@ export class PaymentsService {
     const card = await this.prisma.card.findFirst({
       where: {
         tk: dto.token,
+        organization_id: dto.organizationId,
       },
     });
     let model: CoreApiResponse;
@@ -542,6 +553,7 @@ export class PaymentsService {
           amount: dto.amount,
           invoice_id: String(dto.invoiceId),
           status: 'Declined',
+          type: 'recurrent',
           cashbox_id: dto.cashboxId,
           description: dto.description,
           fail_reason: model.Model.Reason,
@@ -584,6 +596,7 @@ export class PaymentsService {
         invoice_id: dto.invoiceId,
         description: dto.description,
         card_id: card.id,
+        type: 'recurrent',
         cashbox_id: dto.cashboxId,
         ip_id: ip.id,
         status: 'Pending',

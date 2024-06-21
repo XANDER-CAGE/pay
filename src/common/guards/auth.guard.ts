@@ -26,6 +26,7 @@ export class AuthGuard implements CanActivate {
     const [public_id, password_api] = credentials.split(':');
     const cashbox = await this.prisma.cashbox.findFirst({
       where: { public_id, password_api },
+      include: { company: true },
     });
     if (!cashbox) {
       throw new UnauthorizedException({
@@ -64,6 +65,7 @@ export class AuthGuard implements CanActivate {
     request.basicAuthLogin = public_id;
     request.cashboxId = cashbox.id;
     request.sessionId = session.id;
+    request.organizationId = cashbox.company.organization_id;
     return true;
   }
 }

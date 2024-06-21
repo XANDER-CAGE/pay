@@ -46,6 +46,7 @@ export class PaymentsTESTService {
       data: {
         status: model.Success ? 'Completed' : 'Declined',
         processing_ref_num: 'test',
+        is_test: true,
         reason_code: model.Model.ReasonCode,
         fail_reason: model.Model.Reason,
         last_amount: 1000000,
@@ -105,6 +106,7 @@ export class PaymentsTESTService {
       data: {
         status: 'Completed',
         updated_at: new Date(),
+        is_test: true,
       },
     });
     const confirmHook = await this.prisma.hook.findFirst({
@@ -155,6 +157,7 @@ export class PaymentsTESTService {
         status: 'Authorized',
         processing_ref_num: 'test',
         hold_id: 'test',
+        is_test: true,
         last_amount: 1000000,
         updated_at: new Date(),
       },

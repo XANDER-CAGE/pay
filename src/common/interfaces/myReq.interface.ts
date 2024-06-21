@@ -4,4 +4,5 @@ export interface MyReq extends Request {
   basicAuthLogin: string;
   sessionId: number;
   cashboxId: number;
+  organizationId: number;
 }

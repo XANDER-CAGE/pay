@@ -75,6 +75,7 @@ export class PaymentsController {
       accountId: dto.AccountId,
       cashboxId: req.cashboxId,
       token: dto.Token,
+      organizationId: req.organizationId,
     });
   }
 
@@ -137,6 +138,7 @@ export class PaymentsController {
       invoiceId: dto.InvoiceId,
       token: dto.Token,
       ip: req['x-real-ip'],
+      organizationId: req.organizationId,
     });
     if (requestId) {
       await this.cacheManager.set(requestId, JSON.stringify(result));
