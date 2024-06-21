@@ -4,7 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { DecryptService } from '../decrypt/decrypt.service';
 import { ISendOtp } from './interfaces/sendOtpResponse.interface';
 import axios from 'axios';
 import { IValidate } from './interfaces/validate.interface';
@@ -12,7 +11,7 @@ import { CardType } from 'src/common/enum/cardType.enum';
 import { CoreApiResponse } from 'src/common/classes/model.class';
 import { IHandle3ds } from './interfaces/handle3ds.interface';
 import { IHold } from './interfaces/hold.interface';
-import { cashbox, payment } from '@prisma/client';
+import { cashbox, transaction } from '@prisma/client';
 import { IPayByToken } from './interfaces/payByToken.interface';
 import { NotificationService } from '../notification/notification.service';
 import { IConfirmHoldResponse } from './interfaces/confirmHoldResponse.interface';
@@ -25,7 +24,7 @@ interface IGetDataByToken {
 
 interface IConfirmHold {
   cashbox: cashbox;
-  payment: payment;
+  transaction: transaction;
   amount: number;
 }
 
@@ -37,7 +36,6 @@ export class UzcardProcessingService {
   constructor(
     private readonly notificationService: NotificationService,
     private readonly prisma: PrismaService,
-    private readonly decryptService: DecryptService,
   ) {
     this.uzCardLogin = process.env.UZCARD_LOGIN;
     this.uzCardPassword = process.env.UZCARD_PASSWORD;
@@ -131,7 +129,7 @@ export class UzcardProcessingService {
   }
 
   async handle3dsPost(obj: IHandle3ds): Promise<CoreApiResponse> {
-    const { card, company, payment, expiry, ip, cashbox } = obj;
+    const { card, company, transaction, expiry, ip, cashbox } = obj;
     const epos = await this.prisma.epos.findFirst({
       where: {
         cashbox_id: cashbox.id,
@@ -144,7 +142,7 @@ export class UzcardProcessingService {
     const { balance, phone } = await this.getDataByProcessingCardToken(
       card.processing_card_token,
     );
-    const amountInTiyin = +obj.payment.amount * 100;
+    const amountInTiyin = +obj.transaction.amount * 100;
     const requestData = {
       id: 1,
       jsonrpc: '2.0',
@@ -157,7 +155,7 @@ export class UzcardProcessingService {
           amount: amountInTiyin, // Используем сумму платежа
           comission: 0,
           currency: '860', // Валюта платежа
-          ext: payment.invoice_id, // Дополнительная информация, если нужна
+          ext: transaction.invoice_id, // Дополнительная информация, если нужна
           merchantId: epos.merchant_id, // ID мерчанта, если известен
           terminalId: epos.terminal_id, // ID терминала, если известен
         },
@@ -170,23 +168,23 @@ export class UzcardProcessingService {
       },
     });
     const data = {
-      AccountId: payment.account_id,
-      Amount: Number(payment.amount),
+      AccountId: transaction.account_id,
+      Amount: Number(transaction.amount),
       CardExpDate: expiry,
       CardType: card.processing,
-      Date: payment.created_at,
-      Description: payment.description,
+      Date: transaction.created_at,
+      Description: transaction.description,
       GatewayName: card.bank_name,
-      InvoiceId: payment.invoice_id,
+      InvoiceId: transaction.invoice_id,
       IpAddress: ip.ip_address,
       IpCity: obj.ip.city,
       IpCountry: obj.ip.country,
       IpRegion: obj.ip.region,
       Name: card.fullname,
-      Pan: card.masked_pan,
+      Pan: card.pan,
       PublicId: cashbox.public_id,
       Token: card.tk,
-      TransactionId: obj.payment.id,
+      TransactionId: obj.transaction.id,
     };
     let model: CoreApiResponse;
     const failReason = response.data?.error?.message;
@@ -200,9 +198,9 @@ export class UzcardProcessingService {
       } else {
         model = CoreApiResponse.doNotHonor(data);
       }
-      await this.prisma.payment.update({
+      await this.prisma.transaction.update({
         where: {
-          id: payment.id,
+          id: transaction.id,
         },
         data: {
           status: 'Declined',
@@ -216,9 +214,9 @@ export class UzcardProcessingService {
       });
       return model;
     }
-    await this.prisma.payment.update({
+    await this.prisma.transaction.update({
       where: {
-        id: obj.payment.id,
+        id: obj.transaction.id,
       },
       data: {
         status: 'Completed',
@@ -234,7 +232,7 @@ export class UzcardProcessingService {
       },
     });
     this.notificationService.sendSuccessSms({
-      amount: Number(obj.payment.amount),
+      amount: Number(obj.transaction.amount),
       balance,
       cashboxName: obj.cashbox.name,
       pan: obj.pan,
@@ -281,7 +279,7 @@ export class UzcardProcessingService {
         processing: 'uzcard',
       },
     });
-    const amountInTiyin = +dto.payment.amount * 100;
+    const amountInTiyin = +dto.transaction.amount * 100;
     const requestData = {
       jsonrpc: '2.0',
       method: 'hold.create',
@@ -305,28 +303,28 @@ export class UzcardProcessingService {
     const holdId = response?.data?.result?.id;
     const status = response?.data?.result?.status;
     const data = {
-      AccountId: dto.payment.account_id,
-      Amount: Number(dto.payment.amount),
+      AccountId: dto.transaction.account_id,
+      Amount: Number(dto.transaction.amount),
       CardExpDate: dto.expiry,
       CardType: CardType.UZCARD,
-      Date: dto.payment.created_at,
-      Description: dto.payment.description,
+      Date: dto.transaction.created_at,
+      Description: dto.transaction.description,
       GatewayName: 'uzcard',
-      InvoiceId: dto.payment.invoice_id,
+      InvoiceId: dto.transaction.invoice_id,
       IpAddress: dto.ip.ip_address,
       IpCity: dto.ip.city,
       IpCountry: dto.ip.country,
       IpRegion: dto.ip.region,
       Name: dto.card.fullname,
-      Pan: dto.card.masked_pan,
+      Pan: dto.card.pan,
       PublicId: dto.cashbox.public_id,
       Token: dto.card.tk,
-      TransactionId: dto.payment.id,
+      TransactionId: dto.transaction.id,
     };
     if (holdId && status == 0) {
-      await this.prisma.payment.update({
+      await this.prisma.transaction.update({
         where: {
-          id: dto.payment.id,
+          id: dto.transaction.id,
         },
         data: {
           status: 'Authorized',
@@ -338,9 +336,9 @@ export class UzcardProcessingService {
       });
       return CoreApiResponse.hold(data);
     }
-    await this.prisma.payment.update({
+    await this.prisma.transaction.update({
       where: {
-        id: dto.payment.id,
+        id: dto.transaction.id,
       },
       data: {
         status: 'Declined',
@@ -353,7 +351,7 @@ export class UzcardProcessingService {
   }
 
   async confirmHold(dto: IConfirmHold): Promise<IConfirmHoldResponse> {
-    const { payment, cashbox } = dto;
+    const { transaction, cashbox } = dto;
     const epos = await this.prisma.epos.findFirst({
       where: {
         cashbox_id: cashbox.id,
@@ -366,8 +364,8 @@ export class UzcardProcessingService {
       id: 1323,
       params: {
         hold: {
-          holdId: payment.hold_id,
-          ext: payment.id,
+          holdId: transaction.hold_id,
+          ext: transaction.id,
           merchantId: epos.merchant_id,
           port: '123456',
           terminalId: epos.terminal_id,
@@ -389,9 +387,9 @@ export class UzcardProcessingService {
     if (failReason || !refNumExists || !statusIsOK) {
       return { Success: false, Message: failReason || null };
     }
-    await this.prisma.payment.update({
+    await this.prisma.transaction.update({
       where: {
-        id: payment.id,
+        id: transaction.id,
       },
       data: {
         amount: dto.amount,
@@ -403,10 +401,10 @@ export class UzcardProcessingService {
     return { Success: true, Message: null };
   }
 
-  async cancelHold(payment: payment) {
+  async cancelHold(transaction: transaction) {
     const epos = await this.prisma.epos.findFirst({
       where: {
-        cashbox_id: payment.cashbox_id,
+        cashbox_id: transaction.cashbox_id,
         processing: 'uzcard',
       },
     });
@@ -417,10 +415,10 @@ export class UzcardProcessingService {
       id: 2,
       params: {
         hold: {
-          holdId: payment.hold_id,
+          holdId: transaction.hold_id,
           merchantId: epos.merchant_id,
           terminalId: epos.terminal_id,
-          amount: +payment.amount * 100,
+          amount: +transaction.amount * 100,
         },
       },
     };
@@ -434,20 +432,20 @@ export class UzcardProcessingService {
     if (status != 0) {
       return { Success: false, Message: null };
     }
-    await this.prisma.payment.update({
-      where: { id: payment.id },
+    await this.prisma.transaction.update({
+      where: { id: transaction.id },
       data: { status: 'Cancelled', updated_at: new Date() },
     });
     return { Success: true, Message: null };
   }
 
-  async refund(payment: payment) {
+  async refund(transaction: transaction) {
     const requestData = {
       jsonrpc: '2.0',
       method: 'trans.reverse',
       id: 123,
       params: {
-        tranId: payment.processing_ref_num,
+        tranId: transaction.processing_ref_num,
       },
     };
     const { data } = await axios.post(this.uzCardUrl, requestData, {
@@ -459,9 +457,9 @@ export class UzcardProcessingService {
     if (data.result[0]?.status == 'RER') {
       throw new Error('Something went wrong: ' + data.result[0]?.respText);
     }
-    await this.prisma.payment.update({
+    await this.prisma.transaction.update({
       where: {
-        id: payment.id,
+        id: transaction.id,
       },
       data: {
         refunded_date: new Date(),
@@ -471,20 +469,20 @@ export class UzcardProcessingService {
   }
 
   async payByToken(dto: IPayByToken): Promise<CoreApiResponse> {
-    const { card, payment, company, expiry, ip, cashbox } = dto;
+    const { card, transaction, company, expiry, ip, cashbox } = dto;
     const { balance, phone } = await this.getDataByProcessingCardToken(
       card.processing_card_token,
     );
     const epos = await this.prisma.epos.findFirst({
       where: {
-        cashbox_id: payment.cashbox_id,
+        cashbox_id: transaction.cashbox_id,
         processing: 'uzcard',
       },
     });
     if (!epos) {
       throw new NotFoundException('Epos not found');
     }
-    const amountInTiyin = +payment.amount * 100;
+    const amountInTiyin = +transaction.amount * 100;
     const requestData = {
       id: 1,
       jsonrpc: '2.0',
@@ -498,7 +496,7 @@ export class UzcardProcessingService {
           comission: 0,
           //commission: cashbox.commission, // Указываем комиссию, если она известна
           currency: '860', // Валюта платежа
-          ext: payment.invoice_id, // Дополнительная информация, если нужна
+          ext: transaction.invoice_id, // Дополнительная информация, если нужна
           merchantId: epos.merchant_id, // ID мерчанта, если известен
           terminalId: epos.terminal_id, // ID терминала, если известен
         },
@@ -511,23 +509,23 @@ export class UzcardProcessingService {
       },
     });
     const data = {
-      AccountId: payment.account_id,
-      Amount: Number(payment.amount),
+      AccountId: transaction.account_id,
+      Amount: Number(transaction.amount),
       CardExpDate: expiry,
       CardType: CardType.UZCARD,
-      Date: payment.created_at,
-      Description: payment.description,
+      Date: transaction.created_at,
+      Description: transaction.description,
       GatewayName: 'uzcard',
-      InvoiceId: payment.invoice_id,
+      InvoiceId: transaction.invoice_id,
       IpAddress: ip.ip_address,
       IpCity: ip.city,
       IpCountry: ip.country,
       IpRegion: ip.region,
       Name: card.fullname,
-      Pan: card.masked_pan,
+      Pan: card.pan,
       PublicId: cashbox.public_id,
       Token: card.tk,
-      TransactionId: payment.id,
+      TransactionId: transaction.id,
     };
     let model: CoreApiResponse;
     const failReason = response.data?.error?.message;
@@ -541,9 +539,9 @@ export class UzcardProcessingService {
       } else {
         model = CoreApiResponse.doNotHonor(data);
       }
-      await this.prisma.payment.update({
+      await this.prisma.transaction.update({
         where: {
-          id: payment.id,
+          id: transaction.id,
         },
         data: {
           status: 'Declined',
@@ -556,9 +554,9 @@ export class UzcardProcessingService {
       });
       return model;
     }
-    await this.prisma.payment.update({
+    await this.prisma.transaction.update({
       where: {
-        id: payment.id,
+        id: transaction.id,
       },
       data: {
         status: 'Completed',
@@ -568,10 +566,10 @@ export class UzcardProcessingService {
       },
     });
     this.notificationService.sendSuccessSms({
-      amount: Number(payment.amount),
+      amount: Number(transaction.amount),
       balance,
       cashboxName: cashbox.name,
-      pan: card.masked_pan,
+      pan: card.pan,
       phone,
       processing: 'uzcard',
     });

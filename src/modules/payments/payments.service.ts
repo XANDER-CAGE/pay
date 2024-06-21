@@ -111,7 +111,7 @@ export class PaymentsService {
       ipId = newLocation.id;
     }
     if (!cryptoSuccess) {
-      const payment = await this.prisma.payment.create({
+      const payment = await this.prisma.transaction.create({
         data: {
           amount: data.amount,
           currency: '860',
@@ -133,7 +133,7 @@ export class PaymentsService {
       });
       return CoreApiResponse.wrongCryptogram();
     }
-    const paymentWithInvoiceIdExists = await this.prisma.payment.findFirst({
+    const paymentWithInvoiceIdExists = await this.prisma.transaction.findFirst({
       where: { invoice_id: data.invoiceId, cashbox_id: cashbox.id },
     });
     if (paymentWithInvoiceIdExists) {
@@ -147,7 +147,7 @@ export class PaymentsService {
     });
     const isTest = decryptedData.pan.includes('000000000000');
     if (!cSuccess) {
-      await this.prisma.payment.create({
+      await this.prisma.transaction.create({
         data: {
           amount: data.amount,
           currency: '860',
@@ -166,7 +166,7 @@ export class PaymentsService {
       });
       return cData;
     }
-    const payment = await this.prisma.payment.create({
+    const payment = await this.prisma.transaction.create({
       data: {
         amount: data.amount,
         currency: '860',
@@ -206,7 +206,7 @@ export class PaymentsService {
   }
 
   async handle3DSPost(dto: Handle3dsPostDto): Promise<CoreApiResponse> {
-    const payment = await this.prisma.payment.findFirst({
+    const transaction = await this.prisma.transaction.findFirst({
       where: { id: +dto.TransactionId },
       include: {
         cashbox: { include: { company: true, hook: true } },
@@ -214,19 +214,19 @@ export class PaymentsService {
         ip: true,
       },
     });
-    if (!payment) {
+    if (!transaction) {
       throw new NotFoundException('Transaction not found.');
     }
-    if (payment.status !== 'Authorized') {
+    if (transaction.status !== 'Authorized') {
       throw new NotAcceptableException('Transaction not authorized');
     }
-    const cashbox = payment.cashbox;
-    const company = payment.cashbox.company;
+    const cashbox = transaction.cashbox;
+    const company = transaction.cashbox.company;
     if (!company) {
       throw new NotFoundException('Company not found');
     }
-    const ip = payment.ip;
-    const card = payment.card;
+    const ip = transaction.ip;
+    const card = transaction.card;
     const isTest = card.processing_card_token == 'test';
     const { decryptedData } = this.decryptService.decryptCardCryptogram(
       card.cryptogram,
@@ -238,13 +238,13 @@ export class PaymentsService {
       const res = await this.hookService.hook(
         checkHook.url,
         'Payment',
-        payment,
+        transaction,
         card,
       );
       if (res.code != 0) {
         const model = CoreApiResponse.invalidErrorCode();
-        this.prisma.payment.update({
-          where: { id: payment.id },
+        this.prisma.transaction.update({
+          where: { id: transaction.id },
           data: {
             status: 'Declined',
             fail_reason: model.Model.Reason,
@@ -252,32 +252,32 @@ export class PaymentsService {
             status_code: res.code,
           },
         });
-        this.cancelCardChargeTimeout(payment.id);
+        this.cancelCardChargeTimeout(transaction.id);
         return model;
       }
     }
     if (isTest) {
       const model = await this.testService.handle3dsTEST(
-        payment,
+        transaction,
         card,
         ip,
         cashbox,
       );
-      this.cancelCardChargeTimeout(payment.id);
+      this.cancelCardChargeTimeout(transaction.id);
       return model;
     }
     const resFrom3ds = await this.processingService.handle3dsPost({
       cashbox,
       company,
       pan: decryptedData.pan,
-      payment,
+      transaction,
       expiry: decryptedData.expiry,
       ip,
       card,
     });
-    this.cancelCardChargeTimeout(payment.id);
-    const updatedPayment = await this.prisma.payment.findFirst({
-      where: { id: payment.id },
+    this.cancelCardChargeTimeout(transaction.id);
+    const updatedPayment = await this.prisma.transaction.findFirst({
+      where: { id: transaction.id },
     });
     if (resFrom3ds.Success) {
       const payHook = await this.prisma.hook.findFirst({
@@ -311,7 +311,7 @@ export class PaymentsService {
         AccountId: String(dto.accountId),
         Token: dto.token,
       });
-      await this.prisma.payment.create({
+      await this.prisma.transaction.create({
         data: {
           amount: dto.amount,
           invoice_id: String(dto.invoiceId),
@@ -325,7 +325,7 @@ export class PaymentsService {
       });
       return model;
     }
-    const paymentWithInvoiceExists = await this.prisma.payment.findFirst({
+    const paymentWithInvoiceExists = await this.prisma.transaction.findFirst({
       where: {
         invoice_id: dto.invoiceId,
         cashbox_id: dto.cashboxId,
@@ -367,7 +367,7 @@ export class PaymentsService {
         is_active: true,
       },
     });
-    const payment = await this.prisma.payment.create({
+    const transaction = await this.prisma.transaction.create({
       data: {
         amount: dto.amount,
         hold_amount: dto.amount,
@@ -382,21 +382,26 @@ export class PaymentsService {
       },
     });
     if (card.processing_card_token == 'test') {
-      const res = await this.testService.holdTEST(payment, card, ip, cashbox);
+      const res = await this.testService.holdTEST(
+        transaction,
+        card,
+        ip,
+        cashbox,
+      );
       if (res.Success) {
-        this.addHoldTimeout(payment.id, payment.cashbox_id);
+        this.addHoldTimeout(transaction.id, transaction.cashbox_id);
       }
     }
     const processingRes = await this.processingService.hold({
       cashbox,
       pan,
       expiry,
-      payment,
+      transaction,
       card,
       ip,
     });
     if (processingRes.Success) {
-      this.addHoldTimeout(payment.id, payment.cashbox_id);
+      this.addHoldTimeout(transaction.id, transaction.cashbox_id);
     }
     return processingRes;
   }
@@ -405,7 +410,7 @@ export class PaymentsService {
     dto: ConfirmHoldDto,
     cashboxId: number,
   ): Promise<IConfirmHoldResponse> {
-    const payment = await this.prisma.payment.findFirst({
+    const transaction = await this.prisma.transaction.findFirst({
       where: {
         id: dto.TransactionId,
         cashbox_id: cashboxId,
@@ -416,21 +421,25 @@ export class PaymentsService {
         cashbox: true,
       },
     });
-    if (!payment) {
+    if (!transaction) {
       throw new NotFoundException('Payment not found');
     }
-    if (parseFloat(dto.Amount + '') > parseFloat(payment.amount + '')) {
+    if (parseFloat(dto.Amount + '') > parseFloat(transaction.amount + '')) {
       throw new NotAcceptableException(
         'Confirming amount can not be greater than holded amount',
       );
     }
-    const card = payment.card;
-    const cashbox = payment.cashbox;
+    const card = transaction.card;
+    const cashbox = transaction.cashbox;
     if (card.processing_card_token == 'test') {
-      return await this.testService.confirmHoldTEST(payment, dto.Amount, card);
+      return await this.testService.confirmHoldTEST(
+        transaction,
+        dto.Amount,
+        card,
+      );
     }
     const processingRes = await this.processingService.confirmHold({
-      payment,
+      transaction,
       card,
       cashbox,
       amount: dto.Amount,
@@ -439,19 +448,19 @@ export class PaymentsService {
       where: { cashbox_id: cashbox.id, is_active: true, type: 'confirm' },
     });
     if (confirmHook) {
-      const updatedPayment = await this.prisma.payment.findFirst({
-        where: { id: payment.id },
+      const updatedPayment = await this.prisma.transaction.findFirst({
+        where: { id: transaction.id },
       });
       this.hookService.hook(confirmHook.url, 'Payment', updatedPayment, card);
     }
     if (processingRes.Success) {
-      this.cancelHoldTimeout(payment.id);
+      this.cancelHoldTimeout(transaction.id);
     }
     return processingRes;
   }
 
   async cancelHold(transactionId: number, cashboxId: number) {
-    const payment = await this.prisma.payment.findFirst({
+    const transaction = await this.prisma.transaction.findFirst({
       where: {
         id: transactionId,
         status: 'Authorized',
@@ -461,26 +470,26 @@ export class PaymentsService {
         card: true,
       },
     });
-    if (!payment) {
+    if (!transaction) {
       throw new NotFoundException('Payment not found');
     }
-    const card = payment.card;
+    const card = transaction.card;
     if (card.processing_card_token == 'test') {
-      this.cancelHoldTimeout(payment.id);
-      return await this.testService.cancelHoldTEST(payment);
+      this.cancelHoldTimeout(transaction.id);
+      return await this.testService.cancelHoldTEST(transaction);
     }
     const processingRes = await this.processingService.cancelHold({
       card,
-      payment,
+      transaction,
     });
     if (processingRes.Success) {
-      this.cancelHoldTimeout(payment.id);
+      this.cancelHoldTimeout(transaction.id);
     }
     return processingRes;
   }
 
   async refund(dto: RefundDto, cashboxId: number) {
-    const payment = await this.prisma.payment.findFirst({
+    const transaction = await this.prisma.transaction.findFirst({
       where: {
         id: +dto.TransactionId,
         cashbox_id: cashboxId,
@@ -490,25 +499,25 @@ export class PaymentsService {
         cashbox: true,
       },
     });
-    if (!payment) {
+    if (!transaction) {
       throw new NotFoundException('Transactions not found');
     }
-    if (payment.status != 'Completed') {
+    if (transaction.status != 'Completed') {
       throw new NotAcceptableException('Transaction is not completed');
     }
-    const cashbox = payment.cashbox;
-    const card = payment.card;
+    const cashbox = transaction.cashbox;
+    const card = transaction.card;
     if (card.processing_card_token == 'test') {
-      await this.testService.refundTEST(payment);
+      await this.testService.refundTEST(transaction);
     } else {
-      await this.processingService.refund({ payment, card });
+      await this.processingService.refund({ transaction, card });
     }
     const refundHook = await this.prisma.hook.findFirst({
       where: { cashbox_id: cashbox.id, is_active: true, type: 'refund' },
     });
     if (refundHook) {
-      const updatedPayment = await this.prisma.payment.findFirst({
-        where: { id: payment.id },
+      const updatedPayment = await this.prisma.transaction.findFirst({
+        where: { id: transaction.id },
       });
       this.hookService.hook(refundHook.url, 'Refund', updatedPayment, card);
     }
@@ -522,7 +531,7 @@ export class PaymentsService {
   }
 
   async payByToken(dto: IPayByToken): Promise<CoreApiResponse> {
-    const existingPayment = await this.prisma.payment.findFirst({
+    const existingPayment = await this.prisma.transaction.findFirst({
       where: {
         invoice_id: dto.invoiceId,
         cashbox_id: dto.cashboxId,
@@ -548,7 +557,7 @@ export class PaymentsService {
         Token: dto.token,
       });
       model = CoreApiResponse.notPermitted();
-      await this.prisma.payment.create({
+      await this.prisma.transaction.create({
         data: {
           amount: dto.amount,
           invoice_id: String(dto.invoiceId),
@@ -590,7 +599,7 @@ export class PaymentsService {
         },
       });
     }
-    const payment = await this.prisma.payment.create({
+    const transaction = await this.prisma.transaction.create({
       data: {
         amount: dto.amount,
         invoice_id: dto.invoiceId,
@@ -609,13 +618,13 @@ export class PaymentsService {
       const res = await this.hookService.hook(
         checkHook.url,
         'Payment',
-        payment,
+        transaction,
         card,
       );
       if (res.code != 0) {
         const model = CoreApiResponse.invalidErrorCode();
-        this.prisma.payment.update({
-          where: { id: payment.id },
+        this.prisma.transaction.update({
+          where: { id: transaction.id },
           data: {
             status: 'Declined',
             fail_reason: model.Model.Reason,
@@ -627,7 +636,12 @@ export class PaymentsService {
       }
     }
     if (card.processing_card_token == 'test') {
-      return await this.testService.payByTokenTEST(payment, card, cashbox, ip);
+      return await this.testService.payByTokenTEST(
+        transaction,
+        card,
+        cashbox,
+        ip,
+      );
     }
     const { decryptedData } = this.decryptService.decryptCardCryptogram(
       card.cryptogram,
@@ -636,7 +650,7 @@ export class PaymentsService {
       card,
       cashbox,
       ip,
-      payment,
+      transaction,
       pan: decryptedData.pan,
       expiry: decryptedData.expiry,
       company,
@@ -646,8 +660,8 @@ export class PaymentsService {
         where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
       });
       if (payHook) {
-        const updatedPayment = await this.prisma.payment.findFirst({
-          where: { id: payment.id },
+        const updatedPayment = await this.prisma.transaction.findFirst({
+          where: { id: transaction.id },
         });
         this.hookService.hook(payHook.url, 'Payment', updatedPayment, card);
       }
@@ -656,8 +670,8 @@ export class PaymentsService {
         where: { cashbox_id: cashbox.id, is_active: true, type: 'fail' },
       });
       if (failHook) {
-        const updatedPayment = await this.prisma.payment.findFirst({
-          where: { id: payment.id },
+        const updatedPayment = await this.prisma.transaction.findFirst({
+          where: { id: transaction.id },
         });
         this.hookService.hook(failHook.url, 'Payment', updatedPayment, card);
       }
@@ -672,7 +686,7 @@ export class PaymentsService {
   private async cardChargeTimedOut(transactionId: number) {
     const milliseconds = this.cryptoPayTimeout * 60 * 1000;
     const timeout = setTimeout(async () => {
-      await this.prisma.payment.update({
+      await this.prisma.transaction.update({
         where: {
           id: transactionId,
           OR: [{ status: 'AwaitingAuthentication' }, { status: 'Authorized' }],

@@ -1,8 +1,8 @@
-import { card, cashbox, payment } from '@prisma/client';
+import { card, cashbox, transaction } from '@prisma/client';
 
 export interface IConfirmHold {
   cashbox: cashbox;
   card: card;
-  payment: payment;
+  transaction: transaction;
   amount: number;
 }

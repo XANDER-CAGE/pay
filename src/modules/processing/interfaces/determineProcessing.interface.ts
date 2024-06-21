@@ -1,6 +1,6 @@
-import { processing_enum } from '@prisma/client';
+import { processing } from '@prisma/client';
 
 export interface IDetermineProcessing {
   bankName: string;
-  processing: processing_enum;
+  processing: processing;
 }

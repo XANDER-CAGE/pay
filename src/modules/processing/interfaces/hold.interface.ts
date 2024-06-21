@@ -1,10 +1,10 @@
-import { card, cashbox, ip, payment } from '@prisma/client';
+import { card, cashbox, ip, transaction } from '@prisma/client';
 
 export interface IHold {
   cashbox: cashbox;
   pan: string;
   expiry: string;
-  payment: payment;
+  transaction: transaction;
   card: card;
   ip: ip;
 }

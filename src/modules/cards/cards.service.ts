@@ -85,7 +85,7 @@ export class CardsService {
           cryptogram,
           organization_id: organizationId,
           expiry,
-          masked_pan: pan.slice(0, 6) + '******' + pan.slice(-4),
+          pan: pan.slice(0, 6) + '******' + pan.slice(-4),
           pan_ref: panRef,
           tk: 'tk_' + tk,
           status: 'Unapproved',
@@ -124,7 +124,7 @@ export class CardsService {
   }
 
   async validateCard(data: IValidateCard) {
-    const isTest = data.card.masked_pan.includes('000000000000');
+    const isTest = data.card.pan.includes('000000000000');
     if (isTest) {
       return this.validateCardTEST(data);
     }
@@ -256,7 +256,7 @@ export class CardsService {
           cryptogram,
           expiry,
           organization_id: organizationId,
-          masked_pan: pan,
+          pan: pan,
           processing: pan.startsWith('9860') ? 'humo' : 'uzcard',
           pan_ref: panRef,
           tk: 'tk_' + tk,

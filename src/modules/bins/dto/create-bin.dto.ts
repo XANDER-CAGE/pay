@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { processing_enum } from '@prisma/client';
+import { processing } from '@prisma/client';
 import {
   IsBoolean,
   IsEnum,
@@ -35,12 +35,12 @@ export class CreateBinDto {
   @IsBoolean()
   hideCvvInput: boolean;
 
-  @ApiProperty({ enum: processing_enum })
-  @IsEnum(processing_enum)
+  @ApiProperty({ enum: processing })
+  @IsEnum(processing)
   @IsNotEmpty()
-  cardType: processing_enum;
+  cardType: processing;
 
-  @ApiProperty({ enum: processing_enum })
+  @ApiProperty({ enum: processing })
   @IsNumber()
   @IsNotEmpty()
   countryCode: number;

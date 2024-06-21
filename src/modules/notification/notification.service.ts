@@ -114,6 +114,8 @@ export class NotificationService {
       processing = 'MasterCard';
     } else if (data.processing == 'visa') {
       processing = 'Visa';
+    } else if (data.processing == 'virt') {
+      processing = 'Virtual';
     }
     const message = `${processing}: ****${data.pan.slice(
       -4,

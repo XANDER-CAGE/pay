@@ -1,4 +1,4 @@
-import { card, payment } from '@prisma/client';
+import { card, transaction } from '@prisma/client';
 
 export type OperationType = 'Payment' | 'Refund' | 'CardPayout';
 
@@ -20,24 +20,28 @@ export class HookDto {
   InvoiceId: string;
   AccountId: string;
 
-  constructor(payment: payment, card: card, operationType: OperationType) {
+  constructor(
+    transaction: transaction,
+    card: card,
+    operationType: OperationType,
+  ) {
     const cardExp =
       card.expiry.substring(2) + '/' + card.expiry.substring(0, 2);
-    this.AccountId = payment.account_id;
-    this.TransactionId = payment.id;
-    this.Amount = Number(payment.amount);
-    this.CardId = String(payment.card_id);
-    this.CardFirstSix = card.masked_pan.slice(0, 6);
-    this.CardLastFour = card.masked_pan.slice(-4);
+    this.AccountId = transaction.account_id;
+    this.TransactionId = transaction.id;
+    this.Amount = Number(transaction.amount);
+    this.CardId = String(transaction.card_id);
+    this.CardFirstSix = card.pan.slice(0, 6);
+    this.CardLastFour = card.pan.slice(-4);
     this.CardType = card.processing;
     this.CardExpDate = cardExp;
     this.Currency = 'UZS';
-    this.DateTime = payment.created_at;
-    this.InvoiceId = payment.invoice_id;
+    this.DateTime = transaction.created_at;
+    this.InvoiceId = transaction.invoice_id;
     this.OperationType = operationType;
-    this.PaymentAmount = String(payment.amount);
+    this.PaymentAmount = String(transaction.amount);
     this.PaymentCurrency = '860';
-    this.Status = payment.status;
+    this.Status = transaction.status;
     this.TestMode = 0;
   }
 }

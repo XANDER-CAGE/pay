@@ -4,7 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { DecryptService } from '../decrypt/decrypt.service';
 import axios from 'axios';
 import { ISendOtp } from './interfaces/sendOtpResponse.interface';
 import { IValidate } from './interfaces/validate.interface';
@@ -13,7 +12,7 @@ import * as crypto from 'crypto';
 import { CoreApiResponse } from 'src/common/classes/model.class';
 import { IHandle3ds } from './interfaces/handle3ds.interface';
 import * as parser from 'xml2json';
-import { cashbox, epos, payment } from '@prisma/client';
+import { cashbox, epos, transaction } from '@prisma/client';
 import { IHold } from './interfaces/hold.interface';
 import { IPayByToken } from './interfaces/payByToken.interface';
 import { NotificationService } from '../notification/notification.service';
@@ -35,13 +34,13 @@ interface IAuthAmountResponse {
 
 interface IAuthAmount {
   epos: epos;
-  payment: payment;
+  transaction: transaction;
   pan: string;
   expiry: string;
 }
 
 interface IConfirmHold {
-  payment: payment;
+  transaction: transaction;
   amount: number;
 }
 
@@ -58,7 +57,6 @@ export class HumoProcessingService {
   constructor(
     private readonly notificationService: NotificationService,
     private readonly prisma: PrismaService,
-    private readonly decrypService: DecryptService,
   ) {
     this.humoSoapUrl = process.env.HUMO_SOAP_HOST;
     this.humoSoapUsername = process.env.HUMO_SOAP_USERNAME;
@@ -168,7 +166,7 @@ export class HumoProcessingService {
   }
 
   async handle3dsPost(obj: IHandle3ds): Promise<CoreApiResponse> {
-    const { card, cashbox, expiry, ip, pan, payment } = obj;
+    const { card, cashbox, expiry, ip, pan, transaction } = obj;
     const epos = await this.prisma.epos.findFirst({
       where: {
         cashbox_id: cashbox.id,
@@ -182,16 +180,16 @@ export class HumoProcessingService {
     }
     const { balance, phone } = await this.getDataByPan(pan);
     const { success, errorCode, paymentIdFromHumo, paymentRefFromHumo } =
-      await this.authAmount({ epos, expiry, pan, payment });
+      await this.authAmount({ epos, expiry, pan, transaction });
     const data = {
-      AccountId: payment.account_id,
-      Amount: Number(payment.amount),
+      AccountId: transaction.account_id,
+      Amount: Number(transaction.amount),
       CardExpDate: expiry,
       CardType: card.processing,
-      Date: payment.created_at,
-      Description: payment.description,
+      Date: transaction.created_at,
+      Description: transaction.description,
       GatewayName: card.bank_name,
-      InvoiceId: payment.invoice_id,
+      InvoiceId: transaction.invoice_id,
       IpAddress: ip.ip_address,
       IpCity: ip.city,
       IpCountry: ip.country,
@@ -200,7 +198,7 @@ export class HumoProcessingService {
       Pan: pan,
       PublicId: cashbox.public_id,
       Token: card.tk,
-      TransactionId: payment.id,
+      TransactionId: transaction.id,
     };
     let model: CoreApiResponse;
     if (!success) {
@@ -209,9 +207,9 @@ export class HumoProcessingService {
       } else {
         model = CoreApiResponse.doNotHonor(data);
       }
-      await this.prisma.payment.update({
+      await this.prisma.transaction.update({
         where: {
-          id: obj.payment.id,
+          id: obj.transaction.id,
         },
         data: {
           status: 'Declined',
@@ -230,9 +228,9 @@ export class HumoProcessingService {
       paymentRefFromHumo,
     );
     if (!resultFromConfirm.success) {
-      await this.prisma.payment.update({
+      await this.prisma.transaction.update({
         where: {
-          id: payment.id,
+          id: transaction.id,
         },
         data: {
           status: 'Declined',
@@ -244,9 +242,9 @@ export class HumoProcessingService {
         },
       });
     }
-    await this.prisma.payment.update({
+    await this.prisma.transaction.update({
       where: {
-        id: payment.id,
+        id: transaction.id,
       },
       data: {
         status: 'Completed',
@@ -262,7 +260,7 @@ export class HumoProcessingService {
       },
     });
     this.notificationService.sendSuccessSms({
-      amount: Number(obj.payment.amount),
+      amount: Number(obj.transaction.amount),
       balance,
       cashboxName: obj.cashbox.name,
       pan: obj.pan,
@@ -273,7 +271,7 @@ export class HumoProcessingService {
   }
 
   private async authAmount(obj: IAuthAmount): Promise<IAuthAmountResponse> {
-    const amountInTiyin = +obj.payment.amount * 100;
+    const amountInTiyin = +obj.transaction.amount * 100;
     const xml = `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-
     ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema -
     instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ebppif1="urn:PaymentServer">
@@ -283,7 +281,7 @@ export class HumoProcessingService {
     <billerRef>SOAP_DMS</billerRef>
     <payinstrRef>SOAP_DMS</payinstrRef>
     <sessionID>SOAP_DMS_20220106090000</sessionID>
-    <paymentRef>${obj.payment.id}</paymentRef>
+    <paymentRef>${obj.transaction.id}</paymentRef>
     <details>
     <item>
     <name>pan</name>
@@ -423,7 +421,7 @@ export class HumoProcessingService {
   }
 
   async hold(holdData: IHold): Promise<CoreApiResponse> {
-    const { pan, payment, expiry, card, cashbox, ip } = holdData;
+    const { pan, transaction, expiry, card, cashbox, ip } = holdData;
     const epos = await this.prisma.epos.findFirst({
       where: {
         cashbox_id: cashbox.id,
@@ -434,25 +432,25 @@ export class HumoProcessingService {
     });
     const { balance } = await this.getDataByPan(pan);
     const { errorCode, paymentRefFromHumo, success, paymentIdFromHumo } =
-      await this.authAmount({ epos, expiry, pan, payment });
+      await this.authAmount({ epos, expiry, pan, transaction });
     const data = {
-      AccountId: payment.account_id,
-      Amount: Number(payment.amount),
+      AccountId: transaction.account_id,
+      Amount: Number(transaction.amount),
       CardExpDate: expiry,
       CardType: CardType.HUMO,
-      Date: payment.created_at,
-      Description: payment.description,
+      Date: transaction.created_at,
+      Description: transaction.description,
       GatewayName: 'humo',
-      InvoiceId: payment.invoice_id,
+      InvoiceId: transaction.invoice_id,
       IpAddress: ip.ip_address,
       IpCity: ip.city,
       IpCountry: ip.country,
       IpRegion: ip.region,
       Name: card.fullname,
-      Pan: card.masked_pan,
+      Pan: card.pan,
       PublicId: cashbox.public_id,
       Token: card.tk,
-      TransactionId: payment.id,
+      TransactionId: transaction.id,
     };
     let model: CoreApiResponse;
     if (!success) {
@@ -461,9 +459,9 @@ export class HumoProcessingService {
       } else {
         model = CoreApiResponse.doNotHonor(data);
       }
-      await this.prisma.payment.update({
+      await this.prisma.transaction.update({
         where: {
-          id: payment.id,
+          id: transaction.id,
         },
         data: {
           status: 'Declined',
@@ -476,9 +474,9 @@ export class HumoProcessingService {
       });
       return model;
     }
-    await this.prisma.payment.update({
+    await this.prisma.transaction.update({
       where: {
-        id: payment.id,
+        id: transaction.id,
       },
       data: {
         status: 'Authorized',
@@ -498,8 +496,8 @@ export class HumoProcessingService {
       instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:ebppif1="urn:PaymentServer">
       <SOAP-ENV:Body>
       <ebppif1:Payment>
-      <paymentID>${data.payment.hold_id}</paymentID>
-      <paymentRef>${data.payment.processing_ref_num}</paymentRef>
+      <paymentID>${data.transaction.hold_id}</paymentID>
+      <paymentRef>${data.transaction.processing_ref_num}</paymentRef>
       <details>
       <item>
       <name>amount</name>
@@ -529,9 +527,9 @@ export class HumoProcessingService {
         Message: 'Error confirming payment',
       };
     }
-    await this.prisma.payment.update({
+    await this.prisma.transaction.update({
       where: {
-        id: data.payment.id,
+        id: data.transaction.id,
         amount: data.amount,
       },
       data: {
@@ -545,13 +543,13 @@ export class HumoProcessingService {
     };
   }
 
-  async cancelHold(payment: payment) {
+  async cancelHold(transaction: transaction) {
     const xml = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
     xmlns:urn="urn:PaymentServer">
     <soapenv:Header/>
     <soapenv:Body>
     <urn:CancelRequest>
-    <paymentRef>${payment.processing_ref_num}</paymentRef>>
+    <paymentRef>${transaction.processing_ref_num}</paymentRef>>
     <paymentOriginator>${this.humoSoapUsername}</paymentOriginator>
     </urn:CancelRequest>
     </soapenv:Body>
@@ -572,9 +570,9 @@ export class HumoProcessingService {
         Message: 'Cannot cancel: Something went wrong',
       };
     }
-    await this.prisma.payment.update({
+    await this.prisma.transaction.update({
       where: {
-        id: payment.id,
+        id: transaction.id,
       },
       data: {
         status: 'Cancelled',
@@ -587,10 +585,10 @@ export class HumoProcessingService {
     };
   }
 
-  async refund(payment: payment) {
+  async refund(transaction: transaction) {
     const epos = await this.prisma.epos.findFirst({
       where: {
-        cashbox_id: payment.cashbox_id,
+        cashbox_id: transaction.cashbox_id,
         processing: 'humo',
       },
     });
@@ -599,7 +597,7 @@ export class HumoProcessingService {
     <soapenv:Header/>
     <soapenv:Body>
     <urn:ReturnPayment>
-    <paymentRef>${payment.processing_ref_num}</paymentRef>
+    <paymentRef>${transaction.processing_ref_num}</paymentRef>
     <item>
     <name>merchant_id</name>
     <value>${epos.merchant_id}</value>
@@ -626,9 +624,9 @@ export class HumoProcessingService {
         password: this.humoSoapPassword,
       },
     });
-    await this.prisma.payment.update({
+    await this.prisma.transaction.update({
       where: {
-        id: payment.id,
+        id: transaction.id,
       },
       data: {
         refunded_date: new Date(),
@@ -638,7 +636,7 @@ export class HumoProcessingService {
   }
 
   async payByToken(dto: IPayByToken): Promise<CoreApiResponse> {
-    const { pan, cashbox, payment, expiry, ip, card } = dto;
+    const { pan, cashbox, transaction, expiry, ip, card } = dto;
     const { balance, phone } = await this.getDataByPan(pan);
     const epos = await this.prisma.epos.findFirst({
       where: {
@@ -649,17 +647,17 @@ export class HumoProcessingService {
       },
     });
     const { success, errorCode, paymentIdFromHumo, paymentRefFromHumo } =
-      await this.authAmount({ epos, expiry, pan, payment });
+      await this.authAmount({ epos, expiry, pan, transaction });
 
     const data = {
-      AccountId: payment.account_id,
-      Amount: Number(payment.amount),
+      AccountId: transaction.account_id,
+      Amount: Number(transaction.amount),
       CardExpDate: expiry,
       CardType: CardType.HUMO,
-      Date: payment.created_at,
-      Description: payment.description,
+      Date: transaction.created_at,
+      Description: transaction.description,
       GatewayName: 'humo',
-      InvoiceId: payment.invoice_id,
+      InvoiceId: transaction.invoice_id,
       IpAddress: ip.ip_address,
       IpCity: ip.city,
       IpCountry: ip.country,
@@ -668,7 +666,7 @@ export class HumoProcessingService {
       Pan: pan,
       PublicId: cashbox.public_id,
       Token: card.tk,
-      TransactionId: payment.id,
+      TransactionId: transaction.id,
     };
     let model: CoreApiResponse;
     if (!success) {
@@ -677,9 +675,9 @@ export class HumoProcessingService {
       } else {
         model = CoreApiResponse.doNotHonor(data);
       }
-      await this.prisma.payment.update({
+      await this.prisma.transaction.update({
         where: {
-          id: payment.id,
+          id: transaction.id,
         },
         data: {
           status: 'Declined',
@@ -699,9 +697,9 @@ export class HumoProcessingService {
     );
     if (!resFromConfirm.success) {
       model = CoreApiResponse.doNotHonor(data);
-      await this.prisma.payment.update({
+      await this.prisma.transaction.update({
         where: {
-          id: payment.id,
+          id: transaction.id,
         },
         data: {
           status: 'Declined',
@@ -714,9 +712,9 @@ export class HumoProcessingService {
       });
       return model;
     }
-    await this.prisma.payment.update({
+    await this.prisma.transaction.update({
       where: {
-        id: payment.id,
+        id: transaction.id,
       },
       data: {
         status: 'Completed',
@@ -727,7 +725,7 @@ export class HumoProcessingService {
       },
     });
     this.notificationService.sendSuccessSms({
-      amount: Number(payment.amount),
+      amount: Number(transaction.amount),
       balance,
       pan,
       phone,

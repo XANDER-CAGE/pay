@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { card, cashbox, ip, payment } from '@prisma/client';
+import { card, cashbox, ip, transaction } from '@prisma/client';
 import { CoreApiResponse } from 'src/common/classes/model.class';
 import { HookService } from '../hook/hook.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -13,25 +13,30 @@ export class PaymentsTESTService {
     private readonly notificationService: NotificationService,
   ) {}
 
-  async payByTokenTEST(payment: payment, card: card, cashbox: cashbox, ip: ip) {
+  async payByTokenTEST(
+    transaction: transaction,
+    card: card,
+    cashbox: cashbox,
+    ip: ip,
+  ) {
     const data = {
-      AccountId: payment.account_id,
-      Amount: Number(payment.amount),
+      AccountId: transaction.account_id,
+      Amount: Number(transaction.amount),
       CardExpDate: card.expiry,
       CardType: card.processing,
-      Date: payment.created_at,
-      Description: payment.description,
+      Date: transaction.created_at,
+      Description: transaction.description,
       GatewayName: 'humo',
-      InvoiceId: payment.invoice_id,
+      InvoiceId: transaction.invoice_id,
       IpAddress: ip.ip_address,
       IpCity: ip.city,
       IpCountry: ip.country,
       IpRegion: ip.region,
       Name: card.fullname,
-      Pan: card.masked_pan,
+      Pan: card.pan,
       PublicId: cashbox.public_id,
       Token: card.tk,
-      TransactionId: payment.id,
+      TransactionId: transaction.id,
     };
     const results: CoreApiResponse[] = [
       CoreApiResponse.doNotHonor(data),
@@ -41,8 +46,8 @@ export class PaymentsTESTService {
       CoreApiResponse.success(data),
     ];
     const model = results[Math.floor(Math.random() * results.length + 1)];
-    const updatedPayment = await this.prisma.payment.update({
-      where: { id: payment.id },
+    const updatedPayment = await this.prisma.transaction.update({
+      where: { id: transaction.id },
       data: {
         status: model.Success ? 'Completed' : 'Declined',
         processing_ref_num: 'test',
@@ -69,10 +74,10 @@ export class PaymentsTESTService {
     return model;
   }
 
-  async refundTEST(payment: payment) {
-    await this.prisma.payment.update({
+  async refundTEST(transaction: transaction) {
+    await this.prisma.transaction.update({
       where: {
-        id: payment.id,
+        id: transaction.id,
       },
       data: {
         refunded_date: new Date(),
@@ -81,10 +86,10 @@ export class PaymentsTESTService {
     });
   }
 
-  async cancelHoldTEST(payment: payment) {
-    await this.prisma.payment.update({
+  async cancelHoldTEST(transaction: transaction) {
+    await this.prisma.transaction.update({
       where: {
-        id: payment.id,
+        id: transaction.id,
       },
       data: {
         status: 'Cancelled',
@@ -97,10 +102,10 @@ export class PaymentsTESTService {
     };
   }
 
-  async confirmHoldTEST(payment: payment, amount: number, card: card) {
-    await this.prisma.payment.update({
+  async confirmHoldTEST(transaction: transaction, amount: number, card: card) {
+    await this.prisma.transaction.update({
       where: {
-        id: payment.id,
+        id: transaction.id,
         amount: amount,
       },
       data: {
@@ -111,14 +116,14 @@ export class PaymentsTESTService {
     });
     const confirmHook = await this.prisma.hook.findFirst({
       where: {
-        cashbox_id: payment.cashbox_id,
+        cashbox_id: transaction.cashbox_id,
         is_active: true,
         type: 'confirm',
       },
     });
     if (confirmHook) {
-      const updatedPayment = await this.prisma.payment.findFirst({
-        where: { id: payment.id },
+      const updatedPayment = await this.prisma.transaction.findFirst({
+        where: { id: transaction.id },
       });
       this.hookService.hook(confirmHook.url, 'Payment', updatedPayment, card);
     }
@@ -128,30 +133,35 @@ export class PaymentsTESTService {
     };
   }
 
-  async holdTEST(payment: payment, card: card, ip: ip, cashbox: cashbox) {
+  async holdTEST(
+    transaction: transaction,
+    card: card,
+    ip: ip,
+    cashbox: cashbox,
+  ) {
     const data = {
-      AccountId: payment.account_id,
-      Amount: Number(payment.amount),
+      AccountId: transaction.account_id,
+      Amount: Number(transaction.amount),
       CardExpDate: '12/90',
       CardType: card.processing,
-      Date: payment.created_at,
-      Description: payment.description,
+      Date: transaction.created_at,
+      Description: transaction.description,
       GatewayName: card.processing,
-      InvoiceId: payment.invoice_id,
+      InvoiceId: transaction.invoice_id,
       IpAddress: ip.ip_address,
       IpCity: ip.city,
       IpCountry: ip.country,
       IpRegion: ip.region,
       Name: card.fullname,
-      Pan: card.masked_pan,
+      Pan: card.pan,
       PublicId: cashbox.public_id,
       Token: card.tk,
-      TransactionId: payment.id,
+      TransactionId: transaction.id,
     };
 
-    await this.prisma.payment.update({
+    await this.prisma.transaction.update({
       where: {
-        id: payment.id,
+        id: transaction.id,
       },
       data: {
         status: 'Authorized',
@@ -165,29 +175,34 @@ export class PaymentsTESTService {
     return CoreApiResponse.hold(data);
   }
 
-  async handle3dsTEST(payment: payment, card: card, ip: ip, cashbox: cashbox) {
+  async handle3dsTEST(
+    transaction: transaction,
+    card: card,
+    ip: ip,
+    cashbox: cashbox,
+  ) {
     const data = {
-      AccountId: payment.account_id,
-      Amount: Number(payment.amount),
+      AccountId: transaction.account_id,
+      Amount: Number(transaction.amount),
       CardExpDate: '12/90',
       CardType: card.processing,
-      Date: payment.created_at,
-      Description: payment.description,
+      Date: transaction.created_at,
+      Description: transaction.description,
       GatewayName: card.bank_name,
-      InvoiceId: payment.invoice_id,
+      InvoiceId: transaction.invoice_id,
       IpAddress: ip.ip_address,
       IpCity: ip.city,
       IpCountry: ip.country,
       IpRegion: ip.region,
       Name: card.fullname,
-      Pan: card.masked_pan,
+      Pan: card.pan,
       PublicId: cashbox.public_id,
       Token: card.tk,
-      TransactionId: payment.id,
+      TransactionId: transaction.id,
     };
-    const updatedPayment = await this.prisma.payment.update({
+    const updatedPayment = await this.prisma.transaction.update({
       where: {
-        id: payment.id,
+        id: transaction.id,
       },
       data: {
         status: 'Completed',
@@ -209,10 +224,10 @@ export class PaymentsTESTService {
       this.hookService.hook(payHook.url, 'Payment', updatedPayment, card);
     }
     this.notificationService.sendSuccessSms({
-      amount: Number(payment.amount),
+      amount: Number(transaction.amount),
       balance: '1000000',
       cashboxName: cashbox.name,
-      pan: card.masked_pan,
+      pan: card.pan,
       phone: card.phone,
       processing: card.processing,
     });

@@ -1,6 +1,6 @@
-import { card, payment } from '@prisma/client';
+import { card, transaction } from '@prisma/client';
 
 export interface IRefund {
   card: card;
-  payment: payment;
+  transaction: transaction;
 }

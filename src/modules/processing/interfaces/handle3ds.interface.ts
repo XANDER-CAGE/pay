@@ -1,7 +1,7 @@
-import { card, cashbox, company, ip, payment } from '@prisma/client';
+import { card, cashbox, company, ip, transaction } from '@prisma/client';
 
 export interface IHandle3ds {
-  payment: payment;
+  transaction: transaction;
   cashbox: cashbox;
   company: company;
   pan: string;

@@ -24,24 +24,24 @@ model bin {
 }
 
 model card {
-  id                    Int          @id @default(autoincrement())
-  processing_card_token String?      @db.VarChar
+  id                    Int           @id @default(autoincrement())
+  processing_card_token String?       @db.VarChar
   organization_id       Int
-  masked_pan            String?      @db.VarChar
-  expiry                String?      @db.VarChar
-  phone                 String?      @db.VarChar
-  fullname              String?      @db.VarChar
+  pan                   String?       @db.VarChar
+  expiry                String?       @db.VarChar
+  phone                 String?       @db.VarChar
+  fullname              String?       @db.VarChar
   processing            processing?
-  tk                    String?      @db.VarChar
-  cryptogram            String       @db.VarChar
-  pan_ref               String?      @db.VarChar
-  bank_name             String?      @db.VarChar
+  tk                    String?       @db.VarChar
+  cryptogram            String        @db.VarChar
+  pan_ref               String?       @db.VarChar
+  bank_name             String?       @db.VarChar
   status                card_status?
-  created_at            DateTime?    @default(now()) @db.Timestamp(6)
-  updated_at            DateTime?    @default(now()) @db.Timestamp(6)
-  organization          organization @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  created_at            DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?     @default(now()) @db.Timestamp(6)
+  organization          organization  @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   otp                   otp?
-  payment               payment[]
+  transaction           transaction[]
 
   @@index([processing])
   @@index([tk])
@@ -68,8 +68,8 @@ model cashbox {
   company              company?      @relation(fields: [company_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   epos                 epos[]
   hook                 hook[]
-  payment              payment[]
   session              session[]
+  transaction          transaction[]
 
   @@index([company_id])
   @@index([is_active])
@@ -119,41 +119,6 @@ model organization {
   company    company[]
 }
 
-model payment {
-  id                 Int              @id @default(autoincrement())
-  cashbox_id         Int?
-  type               transaction_type
-  receiever_pan      String?          @db.VarChar
-  receiver_fullname  String?          @db.VarChar
-  status_code        Int?
-  reason_code        Int?
-  processing_ref_num String?          @db.VarChar
-  last_amount        Decimal?         @db.Decimal
-  refunded_date      DateTime?        @db.Timestamp(6)
-  card_id            Int?
-  currency           String           @default("860") @db.VarChar
-  amount             Decimal          @db.Decimal
-  invoice_id         String           @db.VarChar
-  description        String?          @db.VarChar
-  status             payment_status
-  hold_id            String?          @db.VarChar
-  hold_amount        Decimal?         @default(0) @db.Decimal
-  fail_reason        String?          @db.VarChar
-  account_id         String?          @db.VarChar
-  is_test            Boolean?         @default(false)
-  ip_id              Int?
-  created_at         DateTime?        @default(now()) @db.Timestamp(6)
-  updated_at         DateTime?        @default(now()) @db.Timestamp(6)
-  card               card?            @relation(fields: [card_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  cashbox            cashbox?         @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  ip                 ip?              @relation(fields: [ip_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@index([cashbox_id])
-  @@index([status])
-  @@index([type])
-  @@index([is_test])
-}
-
 model session {
   id         Int       @id @default(autoincrement())
   sid        String    @db.VarChar
@@ -166,23 +131,23 @@ model session {
 }
 
 model ip {
-  id          Int       @id @default(autoincrement())
-  country     String?   @db.VarChar
-  countryCode String?   @db.VarChar
-  region      String?   @db.VarChar
-  regionName  String?   @db.VarChar
-  city        String?   @db.VarChar
-  zip         String?   @db.VarChar
+  id          Int           @id @default(autoincrement())
+  country     String?       @db.VarChar
+  countryCode String?       @db.VarChar
+  region      String?       @db.VarChar
+  regionName  String?       @db.VarChar
+  city        String?       @db.VarChar
+  zip         String?       @db.VarChar
   lat         Float?
   lon         Float?
-  timezone    String?   @db.VarChar
-  isp         String?   @db.VarChar
-  org         String?   @db.VarChar
-  as          String?   @db.VarChar
-  ip_address  String?   @db.VarChar
-  created_at  DateTime? @default(now()) @db.Timestamp(6)
-  updated_at  DateTime? @default(now()) @db.Timestamp(6)
-  payment     payment[]
+  timezone    String?       @db.VarChar
+  isp         String?       @db.VarChar
+  org         String?       @db.VarChar
+  as          String?       @db.VarChar
+  ip_address  String?       @db.VarChar
+  created_at  DateTime?     @default(now()) @db.Timestamp(6)
+  updated_at  DateTime?     @default(now()) @db.Timestamp(6)
+  transaction transaction[]
 }
 
 model notification {
@@ -218,6 +183,41 @@ model hook {
 
   @@index([cashbox_id])
   @@index([is_active])
+  @@index([type])
+}
+
+model transaction {
+  id                 Int              @id @default(autoincrement())
+  cashbox_id         Int?
+  type               transaction_type
+  receiever_pan      String?          @db.VarChar
+  receiver_fullname  String?          @db.VarChar
+  status_code        Int?
+  reason_code        Int?
+  processing_ref_num String?          @db.VarChar
+  last_amount        Decimal?         @db.Decimal
+  refunded_date      DateTime?        @db.Timestamp(6)
+  card_id            Int?
+  currency           String           @default("860") @db.VarChar
+  amount             Decimal          @db.Decimal
+  invoice_id         String           @db.VarChar
+  description        String?          @db.VarChar
+  status             payment_status
+  hold_id            String?          @db.VarChar
+  hold_amount        Decimal?         @default(0) @db.Decimal
+  fail_reason        String?          @db.VarChar
+  account_id         String?          @db.VarChar
+  is_test            Boolean?         @default(false)
+  ip_id              Int?
+  created_at         DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?        @default(now()) @db.Timestamp(6)
+  card               card?            @relation(fields: [card_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  cashbox            cashbox?         @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  ip                 ip?              @relation(fields: [ip_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([cashbox_id])
+  @@index([is_test])
+  @@index([status])
   @@index([type])
 }
 

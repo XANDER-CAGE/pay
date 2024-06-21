@@ -1,11 +1,11 @@
-import { card, cashbox, company, ip, payment } from '@prisma/client';
+import { card, cashbox, company, ip, transaction } from '@prisma/client';
 
 export interface IPayByToken {
   ip: ip;
   cashbox: cashbox;
   pan: string;
   card: card;
-  payment: payment;
+  transaction: transaction;
   expiry: string;
   company: company;
 }

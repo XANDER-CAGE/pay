@@ -160,27 +160,31 @@ export class ProcessingService {
   }
 
   async confirmHold(data: IConfirmHold): Promise<IConfirmHoldResponse> {
-    const { card, payment, cashbox, amount } = data;
+    const { card, transaction, cashbox, amount } = data;
     if (card.processing == 'humo') {
-      return await this.humoService.confirmHold({ payment, amount });
+      return await this.humoService.confirmHold({ transaction, amount });
     } else if (card.processing == 'uzcard') {
-      return await this.uzcardService.confirmHold({ cashbox, payment, amount });
+      return await this.uzcardService.confirmHold({
+        cashbox,
+        transaction,
+        amount,
+      });
     }
   }
 
   async cancelHold(data: ICancelHold) {
     if (data.card.processing == 'humo') {
-      return await this.humoService.cancelHold(data.payment);
+      return await this.humoService.cancelHold(data.transaction);
     } else if (data.card.processing == 'uzcard') {
-      return await this.uzcardService.cancelHold(data.payment);
+      return await this.uzcardService.cancelHold(data.transaction);
     }
   }
 
   async refund(data: IRefund) {
     if (data.card.processing == 'humo') {
-      await this.humoService.refund(data.payment);
+      await this.humoService.refund(data.transaction);
     } else if (data.card.processing == 'uzcard') {
-      await this.uzcardService.refund(data.payment);
+      await this.uzcardService.refund(data.transaction);
     }
   }
 
@@ -214,7 +218,7 @@ export class ProcessingService {
   }
 
   async getDataByTransactionId(transactionId: number) {
-    const payment = await this.prisma.payment.findFirst({
+    const transaction = await this.prisma.transaction.findFirst({
       where: {
         id: transactionId,
       },
@@ -222,17 +226,17 @@ export class ProcessingService {
         card: true,
       },
     });
-    if (!payment) {
+    if (!transaction) {
       throw new NotFoundException('Transaction not found');
     }
-    const card = payment.card;
+    const card = transaction.card;
     if (card.processing == 'humo') {
       return await this.humoService.getDataByTransactionId(
-        payment.processing_ref_num,
+        transaction.processing_ref_num,
       );
     } else if (card.processing == 'uzcard') {
       return await this.uzcardService.getDataByTransactionId(
-        payment.invoice_id,
+        transaction.invoice_id,
       );
     }
   }

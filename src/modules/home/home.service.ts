@@ -4,8 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { DecryptService } from '../decrypt/decrypt.service';
-import { ProcessingService } from '../processing/processing.service';
 import { ValidateDto } from 'src/modules/home/dto/validate.dto';
 import { CardsService } from '../cards/cards.service';
 
@@ -15,8 +13,6 @@ export class HomeService {
   private readonly cryptoPayTimeout: number;
   constructor(
     private readonly prisma: PrismaService,
-    private readonly decryptService: DecryptService,
-    private readonly processingService: ProcessingService,
     private readonly cardService: CardsService,
   ) {
     this.otpTimeout = Number(process.env.OTP_TIMEOUT_IN_MINUTES) || 2;
@@ -24,7 +20,7 @@ export class HomeService {
       Number(process.env.PAY_VIA_CRYPTO_TIMEOUT_IN_MINUTES) || 10;
   }
   async validate(dto: ValidateDto) {
-    const payment = await this.prisma.payment.findFirst({
+    const payment = await this.prisma.transaction.findFirst({
       where: {
         id: +dto.md,
         status: 'AwaitingAuthentication',
@@ -50,7 +46,7 @@ export class HomeService {
     if (!success) {
       throw new NotAcceptableException(message);
     }
-    await this.prisma.payment.update({
+    await this.prisma.transaction.update({
       where: {
         id: payment.id,
       },
