@@ -732,11 +732,16 @@ export class PaymentsService {
     if (!card) {
       throw new NotFoundException('Card not found or deactivated');
     }
+    console.log('******************************************************1');
+
     const { decryptedData } = this.decryptService.decryptCardCryptogram(
       card.cryptogram,
     );
+    console.log('******************************************************2');
+
     const { fullname, balance } =
       await this.processingService.getDataByCardInfo(card, decryptedData.pan);
+    console.log('******************************************************3');
     const transaction = await this.prisma.transaction.create({
       data: {
         amount: dto.amount,
@@ -752,6 +757,7 @@ export class PaymentsService {
         last_amount: +balance / 100,
       },
     });
+    console.log('******************************************************4');
     const res = await this.processingService.p2p({
       amount: +dto.amount,
       cashboxId: dto.cashboxId,
