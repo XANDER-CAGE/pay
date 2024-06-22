@@ -251,6 +251,8 @@ export class ProcessingService {
 
   async getDataByPan(pan: string): Promise<IGetDataByPanRes> {
     const { processing } = await this.determine(pan);
+    console.log(processing);
+
     if (processing == 'humo') {
       return await this.humoService.getDataByPan(pan);
     } else if (processing == 'uzcard') {
