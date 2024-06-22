@@ -49,11 +49,7 @@ export class ProcessingService {
           ],
         },
       });
-      console.log('BIN FROM DB', bin);
     }
-    console.log('BIN FROM CACHE', bin);
-    
-
     if (!bin) {
       const errorMsg = 'BIN не найден в базе данных: ' + binFromPan;
       throw new NotFoundException(errorMsg);
