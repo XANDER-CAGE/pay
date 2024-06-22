@@ -737,10 +737,14 @@ export class PaymentsService {
     );
     const { fullname: receiverName } =
       await this.processingService.getDataByPan(dto.receiverPan);
+    console.log(receiverName);
+
     const { balance } = await this.processingService.getDataByCardInfo(
       card,
       decryptedData.pan,
     );
+    console.log(balance);
+
     const transaction = await this.prisma.transaction.create({
       data: {
         amount: dto.amount,
