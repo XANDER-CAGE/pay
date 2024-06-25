@@ -114,9 +114,12 @@ export class NotificationService {
       processing = 'MasterCard';
     } else if (data.processing == 'visa') {
       processing = 'Visa';
-    } else if (data.processing == 'virt') {
-      processing = 'Virtual';
+    } else if (data.processing == 'mir') {
+      processing = 'Mir';
+    } else if (data.processing == 'unionpay') {
+      processing = 'Union Pay';
     }
+
     const message = `${processing}: ****${data.pan.slice(
       -4,
     )}\nData: ${dateString}\nOplata: ${data.amount} sum (${

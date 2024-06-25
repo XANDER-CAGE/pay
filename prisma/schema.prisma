@@ -8,16 +8,16 @@ datasource db {
 }
 
 model bin {
-  id             Int         @id @default(autoincrement())
-  bin            Int         @unique
-  logo_url       String?     @db.VarChar
-  bank_name      String?     @db.VarChar
-  currency       String?     @db.VarChar
-  hide_cvv_input Boolean
-  processing     processing?
-  country_code   Int?
-  created_at     DateTime?   @default(now()) @db.Timestamp(6)
-  updated_at     DateTime?   @default(now()) @db.Timestamp(6)
+  id                 Int         @id @default(autoincrement())
+  bin                Int         @unique
+  logo_url           String?     @db.VarChar
+  bank_name          String?     @db.VarChar
+  currency           String?     @db.VarChar
+  hide_cvv_input     Boolean
+  processing         processing?
+  cobadge_processing processing?
+  created_at         DateTime?   @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?   @default(now()) @db.Timestamp(6)
 
   @@index([bin])
   @@index([processing])
@@ -221,6 +221,15 @@ model transaction {
   @@index([type])
 }
 
+model bank {
+  id           Int       @id @default(autoincrement())
+  name         String?   @db.VarChar
+  image_url    String?   @db.VarChar
+  country_code Int?
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+  updated_at   DateTime? @default(now()) @db.Timestamp(6)
+}
+
 enum payment_status {
   Authorized
   Pending
@@ -257,7 +266,8 @@ enum processing {
   humo
   visa
   mastercard
-  virt
+  mir
+  unionpay
 }
 
 enum transaction_type {

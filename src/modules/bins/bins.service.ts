@@ -15,7 +15,6 @@ export class BinsService {
         processing: dto.cardType,
         currency: dto.currency,
         hide_cvv_input: dto.hideCvvInput,
-        country_code: dto.countryCode,
         logo_url: dto.logoUrl,
       },
       create: {
@@ -23,7 +22,6 @@ export class BinsService {
         processing: dto.cardType,
         currency: dto.currency,
         hide_cvv_input: dto.hideCvvInput,
-        country_code: dto.countryCode,
         logo_url: dto.logoUrl,
         bin: dto.bin,
       },
@@ -31,20 +29,6 @@ export class BinsService {
   }
 
   async findOne(bin: number) {
-    return await this.prisma.bin.findFirst({
-      where: {
-        bin,
-      },
-      select: {
-        bank_name: true,
-        bin: true,
-        processing: true,
-        country_code: true,
-        currency: true,
-        hide_cvv_input: true,
-        id: true,
-        logo_url: true,
-      },
-    });
+    return await this.prisma.bin.findFirst({ where: { bin } });
   }
 }
