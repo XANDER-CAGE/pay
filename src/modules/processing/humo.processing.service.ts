@@ -167,6 +167,8 @@ export class HumoProcessingService {
 
   async handle3dsPost(obj: IHandle3ds): Promise<CoreApiResponse> {
     const { card, cashbox, expiry, ip, pan, transaction } = obj;
+    console.log('HANDLE #DS START');
+
     const epos = await this.prisma.epos.findFirst({
       where: {
         cashbox_id: cashbox.id,
