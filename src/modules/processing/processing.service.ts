@@ -1,6 +1,5 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { BINS_SYMBOL, binsType } from 'src/common/parsedCache/parsedCache.bins';
 import { bin, card, cashbox } from '@prisma/client';
 import { ISendOtp } from './interfaces/sendOtpResponse.interface';
 import { IDetermineProcessing } from './interfaces/determineProcessing.interface';
@@ -26,17 +25,10 @@ export class ProcessingService {
     private readonly prisma: PrismaService,
     private readonly humoService: HumoProcessingService,
     private readonly uzcardService: UzcardProcessingService,
-    @Inject(BINS_SYMBOL)
-    private readonly bins: binsType,
   ) {}
 
   private async determine(pan: string): Promise<IDetermineProcessing> {
     let bin: bin;
-    bin =
-      this.bins[pan.substring(0, 8)] ||
-      this.bins[pan.substring(0, 7)] ||
-      this.bins[pan.substring(0, 6)] ||
-      this.bins[pan.substring(0, 4)];
     const binFromPan = pan.substring(0, 4);
     if (!bin) {
       bin = await this.prisma.bin.findFirst({
