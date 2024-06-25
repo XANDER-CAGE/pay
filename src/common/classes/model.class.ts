@@ -165,7 +165,7 @@ export class CoreApiResponse {
       ? data.CardExpDate.substring(2) + '/' + data.CardExpDate.substring(0, 2)
       : null;
     const Model = {
-      ReasonCode: data.ReasonCode || null,
+      ReasonCode: data.ReasonCode || 0,
       PublicId: data.PublicId || null,
       TerminalUrl: 'https://pay.dnsc.uz',
       CurrencyCode: 860,
