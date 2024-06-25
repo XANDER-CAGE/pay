@@ -227,6 +227,8 @@ export class HumoProcessingService {
       paymentIdFromHumo,
       paymentRefFromHumo,
     );
+    console.log('RESULT FROM 3DS CONFIRM HUMO', resultFromConfirm);
+
     if (!resultFromConfirm.success) {
       await this.prisma.transaction.update({
         where: {
