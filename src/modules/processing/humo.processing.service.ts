@@ -267,6 +267,8 @@ export class HumoProcessingService {
       phone,
       processing: 'humo',
     });
+    console.log('HUMO 3DS res', CoreApiResponse.success(data));
+
     return CoreApiResponse.success(data);
   }
 
