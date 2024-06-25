@@ -193,7 +193,7 @@ export class CoreApiResponse {
       IssuerBankCountry: 'UZ',
       Issuer: null,
       CardTypeCode: 16,
-      StatusCode: 5,
+      StatusCode: 3,
       CultureName: 'uz',
       Type: 0,
       SubscriptionId: null,
