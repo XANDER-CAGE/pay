@@ -160,7 +160,7 @@ export class CoreApiResponse {
   Message: null;
 
   constructor(data: IData) {
-    const date = new Date(data.Date);
+    const date = new Date();
     const cardExp = data.CardExpDate
       ? data.CardExpDate.substring(2) + '/' + data.CardExpDate.substring(0, 2)
       : null;
