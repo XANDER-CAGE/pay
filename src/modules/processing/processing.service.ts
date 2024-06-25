@@ -88,6 +88,8 @@ export class ProcessingService {
       data = await this.humoService.handle3dsPost(obj);
     }
     data.Model.GatewayName = bankName;
+    console.log('PROCESSING #DS DATA', data);
+
     return data;
   }
 

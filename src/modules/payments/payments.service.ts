@@ -301,6 +301,8 @@ export class PaymentsService {
         this.hookService.hook(failHook.url, 'Payment', updatedPayment, card);
       }
     }
+    console.log('PAYMENT #DS RETURN', resFrom3ds);
+
     return resFrom3ds;
   }
 
