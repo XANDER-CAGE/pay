@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { bin, card, cashbox } from '@prisma/client';
+import { card, cashbox } from '@prisma/client';
 import { ISendOtp } from './interfaces/sendOtpResponse.interface';
 import { IDetermineProcessing } from './interfaces/determineProcessing.interface';
 import { HumoProcessingService } from './humo.processing.service';
@@ -28,22 +28,18 @@ export class ProcessingService {
   ) {}
 
   private async determine(pan: string): Promise<IDetermineProcessing> {
-    let bin: bin;
-    const binFromPan = pan.substring(0, 4);
+    const bin = await this.prisma.bin.findFirst({
+      where: {
+        OR: [
+          { bin: +pan.substring(0, 8) },
+          { bin: +pan.substring(0, 7) },
+          { bin: +pan.substring(0, 6) },
+          { bin: +pan.substring(0, 4) },
+        ],
+      },
+    });
     if (!bin) {
-      bin = await this.prisma.bin.findFirst({
-        where: {
-          OR: [
-            { bin: +pan.substring(0, 8) },
-            { bin: +pan.substring(0, 7) },
-            { bin: +pan.substring(0, 6) },
-            { bin: +pan.substring(0, 4) },
-          ],
-        },
-      });
-    }
-    if (!bin) {
-      const errorMsg = 'BIN не найден в базе данных: ' + binFromPan;
+      const errorMsg = 'BIN не найден в базе данных: ' + pan.substring(0, 8);
       throw new NotFoundException(errorMsg);
     }
     return {
