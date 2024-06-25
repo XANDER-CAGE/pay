@@ -208,6 +208,7 @@ export class PaymentsTESTService {
         status: 'Completed',
         processing_ref_num: 'test',
         last_amount: 1000000,
+        is_test: true,
         reason_code: 0,
         card: {
           update: {
