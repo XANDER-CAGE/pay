@@ -221,6 +221,8 @@ export class PaymentsService {
         ip: true,
       },
     });
+    console.log('HANDLE #DS TRANSA', transaction);
+
     if (!transaction) {
       throw new NotFoundException('Transaction not found.');
     }
