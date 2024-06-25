@@ -671,8 +671,6 @@ export class UzcardProcessingService {
           password: this.uzCardPassword,
         },
       });
-      console.log(response.data);
-
       const failReason = response.data?.error?.message;
       const statusIsOK = response.data?.result?.status == 'OK';
       const refNum = response.data?.result?.refNum;

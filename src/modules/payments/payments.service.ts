@@ -221,8 +221,6 @@ export class PaymentsService {
         ip: true,
       },
     });
-    console.log('HANDLE #DS TRANSA', transaction);
-
     if (!transaction) {
       throw new NotFoundException('Transaction not found.');
     }
@@ -303,8 +301,6 @@ export class PaymentsService {
         this.hookService.hook(failHook.url, 'Payment', updatedPayment, card);
       }
     }
-    console.log('PAYMENT #DS RETURN', resFrom3ds);
-
     return resFrom3ds;
   }
 
@@ -741,14 +737,10 @@ export class PaymentsService {
     );
     const { fullname: receiverName } =
       await this.processingService.getDataByPan(dto.receiverPan);
-    console.log(receiverName);
-
     const { balance } = await this.processingService.getDataByCardInfo(
       card,
       decryptedData.pan,
     );
-    console.log(balance);
-
     const transaction = await this.prisma.transaction.create({
       data: {
         amount: dto.amount,

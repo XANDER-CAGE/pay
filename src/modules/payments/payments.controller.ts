@@ -23,7 +23,9 @@ import { PayByTokenDto } from './dto/payByToken.dto';
 import { ConfirmHoldDto } from './dto/confirmHold.dto';
 import { AdminGuard } from 'src/common/guards/admin.guard';
 import { P2PDto } from './dto/p2p.dto';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Transactions')
 @Controller('payments')
 export class PaymentsController {
   constructor(

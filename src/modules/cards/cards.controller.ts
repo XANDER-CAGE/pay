@@ -14,7 +14,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CoreApiResponse } from 'src/common/classes/model.class';
 import { MyReq } from 'src/common/interfaces/myReq.interface';
 import { AuthGuard } from 'src/common/guards/auth.guard';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Cards')
 @Controller('cards')
 export class CardsController {
   constructor(

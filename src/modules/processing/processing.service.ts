@@ -88,8 +88,6 @@ export class ProcessingService {
       data = await this.humoService.handle3dsPost(obj);
     }
     data.Model.GatewayName = bankName;
-    console.log('PROCESSING #DS DATA', data);
-
     return data;
   }
 
@@ -240,8 +238,6 @@ export class ProcessingService {
 
   async getDataByPan(pan: string): Promise<IGetDataByPanRes> {
     const { processing } = await this.determine(pan);
-    console.log(processing);
-
     if (processing == 'humo') {
       return await this.humoService.getDataByPan(pan);
     } else if (processing == 'uzcard') {

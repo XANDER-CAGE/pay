@@ -167,8 +167,6 @@ export class HumoProcessingService {
 
   async handle3dsPost(obj: IHandle3ds): Promise<CoreApiResponse> {
     const { card, cashbox, expiry, ip, pan, transaction } = obj;
-    console.log('HANDLE #DS START');
-
     const epos = await this.prisma.epos.findFirst({
       where: {
         cashbox_id: cashbox.id,
@@ -229,8 +227,6 @@ export class HumoProcessingService {
       paymentIdFromHumo,
       paymentRefFromHumo,
     );
-    console.log('RESULT FROM 3DS CONFIRM HUMO', resultFromConfirm);
-
     if (!resultFromConfirm.success) {
       await this.prisma.transaction.update({
         where: {
@@ -271,8 +267,6 @@ export class HumoProcessingService {
       phone,
       processing: 'humo',
     });
-    console.log('HUMO 3DS res', CoreApiResponse.success(data));
-
     return CoreApiResponse.success(data);
   }
 
