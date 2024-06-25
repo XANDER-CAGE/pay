@@ -10,14 +10,15 @@ datasource db {
 model bin {
   id                 Int         @id @default(autoincrement())
   bin                Int         @unique
-  logo_url           String?     @db.VarChar
-  bank_name          String?     @db.VarChar
+  bank_id            Int?
   currency           String?     @db.VarChar
+  bank_name          String?     @db.VarChar
   hide_cvv_input     Boolean
   processing         processing?
   cobadge_processing processing?
   created_at         DateTime?   @default(now()) @db.Timestamp(6)
   updated_at         DateTime?   @default(now()) @db.Timestamp(6)
+  bank               bank?       @relation(fields: [bank_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([bin])
   @@index([processing])
@@ -98,10 +99,12 @@ model epos {
   merchant_id  String      @db.VarChar
   terminal_id  String      @db.VarChar
   cashbox_id   Int?
+  bank_id      Int?
   is_recurrent Boolean?
   is_active    Boolean?    @default(true)
   created_at   DateTime?   @default(now()) @db.Timestamp(6)
   updated_at   DateTime?   @default(now()) @db.Timestamp(6)
+  bank         bank?       @relation(fields: [bank_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   cashbox      cashbox?    @relation(fields: [cashbox_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([cashbox_id])
@@ -228,6 +231,8 @@ model bank {
   country_code Int?
   created_at   DateTime? @default(now()) @db.Timestamp(6)
   updated_at   DateTime? @default(now()) @db.Timestamp(6)
+  bin          bin[]
+  epos         epos[]
 }
 
 enum payment_status {

@@ -15,14 +15,12 @@ export class BinsService {
         processing: dto.cardType,
         currency: dto.currency,
         hide_cvv_input: dto.hideCvvInput,
-        logo_url: dto.logoUrl,
       },
       create: {
         bank_name: dto.bankName,
         processing: dto.cardType,
         currency: dto.currency,
         hide_cvv_input: dto.hideCvvInput,
-        logo_url: dto.logoUrl,
         bin: dto.bin,
       },
     });
