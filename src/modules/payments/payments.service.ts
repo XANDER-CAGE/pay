@@ -217,8 +217,12 @@ export class PaymentsService {
   }
 
   async handle3DSPost(dto: Handle3dsPostDto): Promise<CoreApiResponse> {
+    console.log('#DS DTO', dto);
     let transactionId;
-    if (typeof dto.TransactionId === 'string' && dto.TransactionId.trim().startsWith('{')) {
+    if (
+      typeof dto.TransactionId === 'string' &&
+      dto.TransactionId.trim().startsWith('{')
+    ) {
       try {
         const parsedId = JSON.parse(dto.TransactionId);
         if (isObject(parsedId) && parsedId.TransactionId) {
@@ -233,6 +237,7 @@ export class PaymentsService {
     } else {
       transactionId = +dto.TransactionId;
     }
+    console.log('AFTER CHANGE', dto.TransactionId);
     const transaction = await this.prisma.transaction.findFirst({
       where: { id: +dto.TransactionId },
       include: {
