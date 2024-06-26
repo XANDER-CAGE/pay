@@ -216,17 +216,8 @@ export class PaymentsService {
   }
 
   async handle3DSPost(dto: Handle3dsPostDto): Promise<CoreApiResponse> {
-//    const transaction = await this.prisma.transaction.findFirst({
-//      where: { id: +dto.TransactionId },
-//     include: {
-//       cashbox: { include: { company: true, hook: true } },
-//        card: true,
-//        ip: true,
-//      },
-//    });
-    console.log(dto.TransactionId);
     const transaction = await this.prisma.transaction.findFirst({
-      where: { id: { equals: +dto.TransactionId } },
+      where: { id: +dto.TransactionId },
       include: {
         cashbox: { include: { company: true, hook: true } },
         card: true,
