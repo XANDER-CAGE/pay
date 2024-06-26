@@ -57,20 +57,25 @@ export class HomeController {
       AuthorizationDataId: '65eae845d71cf55202cbf724',
       SessionId: 'b05584fd-a7fd-4805-b760-8db0411b4c20',
     };
-    const paResBase64 = Buffer.from(JSON.stringify(paResData)).toString(
-      'base64',
-    );
+    const paResBase64 = Buffer.from(JSON.stringify(paResData)).toString('base64');
+  
     try {
+      let md = dto.md;
+      if (dto.TermUrl === 'https://widget.gpay.uz/3ds-callback') {
+        md = JSON.stringify({
+          SuccessUrl: 'https://widget.gpay.uz/app/result.html?Success',
+          FailUrl: 'https://widget.cloudpayments.ru/app/result.html?Fail',
+          TransactionId: dto.md,
+        });
+      }
+  
       return {
         PaRes: paResBase64,
-        md: dto.md,
+        md: md,
         TermUrl: dto.TermUrl,
       };
     } catch (error) {
-      console.error(
-        'Ошибка при отправке POST-запроса на TermUrl:',
-        error.message,
-      );
+      console.error('Ошибка при отправке POST-запроса на TermUrl:', error.message);
       throw new Error('Ошибка при отправке POST-запроса на TermUrl');
     }
   }
