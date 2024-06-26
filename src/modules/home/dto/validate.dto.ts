@@ -38,7 +38,11 @@ export class ValidateDto {
   @Validate(IsJsonStringOrNumber)
   @Transform(({ value }) => {
     try {
-      return JSON.parse(value);
+      const parsed = JSON.parse(value);
+      if (typeof parsed === 'object' && parsed !== null) {
+        return parsed.transactionId ?? parsed;
+      }
+      return parsed;
     } catch {
       return value;
     }
