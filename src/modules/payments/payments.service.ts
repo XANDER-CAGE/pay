@@ -224,6 +224,7 @@ export class PaymentsService {
 //        ip: true,
 //      },
 //    });
+    console.log(dto.TransactionId);
     const transaction = await this.prisma.transaction.findFirst({
       where: { id: { equals: +dto.TransactionId } },
       include: {
