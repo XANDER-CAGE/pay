@@ -60,10 +60,20 @@ export class HomeController {
     const paResBase64 = Buffer.from(JSON.stringify(paResData)).toString(
       'base64',
     );
+
     try {
+      let md = dto.md;
+      if (dto.TermUrl === 'https://widget.gpay.uz/3ds-callback') {
+        md = JSON.stringify({
+          SuccessUrl: 'https://widget.gpay.uz/app/result.html?Success',
+          FailUrl: 'https://widget.cloudpayments.ru/app/result.html?Fail',
+          TransactionId: dto.md,
+        });
+      }
+
       return {
         PaRes: paResBase64,
-        md: dto.md,
+        md: md,
         TermUrl: dto.TermUrl,
       };
     } catch (error) {

@@ -21,6 +21,7 @@ import { SchedulerRegistry } from '@nestjs/schedule';
 import { HookService } from '../hook/hook.service';
 import { IConfirmHoldResponse } from '../processing/interfaces/confirmHoldResponse.interface';
 import { PaymentsTESTService } from './payments.test.service';
+import { isObject } from 'lodash';
 
 type otp = {
   attempts: number;
@@ -216,6 +217,27 @@ export class PaymentsService {
   }
 
   async handle3DSPost(dto: Handle3dsPostDto): Promise<CoreApiResponse> {
+    console.log('#DS DTO', dto);
+    let transactionId;
+    if (
+      typeof dto.TransactionId === 'string' &&
+      dto.TransactionId.trim().startsWith('{')
+    ) {
+      try {
+        const parsedId = JSON.parse(dto.TransactionId);
+        if (isObject(parsedId) && parsedId.TransactionId) {
+          transactionId = +parsedId.TransactionId; // Преобразуем в число
+        } else {
+          throw new Error('Invalid TransactionId JSON structure');
+        }
+      } catch (error) {
+        console.error('Ошибка при разборе TransactionId:', error);
+        throw new NotFoundException('Invalid TransactionId format');
+      }
+    } else {
+      transactionId = +dto.TransactionId;
+    }
+    console.log('AFTER CHANGE', dto.TransactionId);
     const transaction = await this.prisma.transaction.findFirst({
       where: { id: +dto.TransactionId },
       include: {
@@ -224,6 +246,7 @@ export class PaymentsService {
         ip: true,
       },
     });
+
     if (!transaction) {
       throw new NotFoundException('Transaction not found.');
     }
