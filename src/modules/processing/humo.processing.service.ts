@@ -17,6 +17,7 @@ import { IHold } from './interfaces/hold.interface';
 import { IPayByToken } from './interfaces/payByToken.interface';
 import { NotificationService } from '../notification/notification.service';
 import { IConfirmHoldResponse } from './interfaces/confirmHoldResponse.interface';
+import { env } from 'src/common/config/env.config';
 
 interface IGetDataByPan {
   phone: string;
@@ -58,13 +59,13 @@ export class HumoProcessingService {
     private readonly notificationService: NotificationService,
     private readonly prisma: PrismaService,
   ) {
-    this.humoSoapUrl = process.env.HUMO_SOAP_HOST;
-    this.humoSoapUsername = process.env.HUMO_SOAP_USERNAME;
-    this.humoSoapPassword = process.env.HUMO_SOAP_PASSWORD;
-    this.humoSoapCenterId = process.env.HUMO_CENTER_ID;
-    this.humoSoapPointCode = process.env.HUMO_POINT_CODE;
-    this.humoMiddlewareToken = process.env.HUMO_MIDDLEWARE_TOKEN;
-    this.humoMiddlewareUrl = process.env.HUMO_MIDDLEWARE_URL;
+    this.humoSoapUrl = env.HUMO_SOAP_HOST;
+    this.humoSoapUsername = env.HUMO_SOAP_USERNAME;
+    this.humoSoapPassword = env.HUMO_SOAP_PASSWORD;
+    this.humoSoapCenterId = env.HUMO_CENTER_ID;
+    this.humoSoapPointCode = env.HUMO_POINT_CODE;
+    this.humoMiddlewareToken = env.HUMO_MIDDLEWARE_TOKEN;
+    this.humoMiddlewareUrl = env.HUMO_MIDDLEWARE_URL;
   }
 
   async sendOtp(

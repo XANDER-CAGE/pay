@@ -4,6 +4,7 @@ import { CoreApiResponse } from 'src/common/classes/model.class';
 import { HookService } from '../hook/hook.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationService } from '../notification/notification.service';
+import { HookDto } from '../hook/dto/hook.dto';
 
 @Injectable()
 export class PaymentsTESTService {
@@ -63,13 +64,27 @@ export class PaymentsTESTService {
         where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
       });
       if (payHook) {
-        this.hookService.hook(payHook.url, 'Payment', updatedPayment, card);
+        const hookDto = new HookDto(
+          updatedPayment,
+          card,
+          'Payment',
+          payHook.url,
+        );
+        this.hookService.sendToHookQueue(hookDto);
       }
     } else {
       const failHook = await this.prisma.hook.findFirst({
         where: { cashbox_id: cashbox.id, is_active: true, type: 'fail' },
       });
-      this.hookService.hook(failHook.url, 'Payment', updatedPayment, card);
+      if (failHook) {
+        const hookDto = new HookDto(
+          updatedPayment,
+          card,
+          'Payment',
+          failHook.url,
+        );
+        this.hookService.sendToHookQueue(hookDto);
+      }
     }
     return model;
   }
@@ -125,7 +140,13 @@ export class PaymentsTESTService {
       const updatedPayment = await this.prisma.transaction.findFirst({
         where: { id: transaction.id },
       });
-      this.hookService.hook(confirmHook.url, 'Payment', updatedPayment, card);
+      const hookDto = new HookDto(
+        updatedPayment,
+        card,
+        'Payment',
+        confirmHook.url,
+      );
+      this.hookService.sendToHookQueue(hookDto);
     }
     return {
       Success: true,
@@ -222,7 +243,8 @@ export class PaymentsTESTService {
       where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
     });
     if (payHook) {
-      this.hookService.hook(payHook.url, 'Payment', updatedPayment, card);
+      const hookDto = new HookDto(updatedPayment, card, 'Payment', payHook.url);
+      this.hookService.sendToHookQueue(hookDto);
     }
     this.notificationService.sendSuccessSms({
       amount: Number(transaction.amount),

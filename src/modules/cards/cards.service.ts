@@ -8,6 +8,7 @@ import * as crypto from 'crypto';
 import { card, cashbox, otp } from '@prisma/client';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { NotificationService } from '../notification/notification.service';
+import { env } from 'src/common/config/env.config';
 
 interface IValidateCard {
   card: card;
@@ -38,10 +39,9 @@ export class CardsService {
     private readonly schedulerRegistry: SchedulerRegistry,
     private readonly notificationService: NotificationService,
   ) {
-    this.otpTimeout = +process.env.OTP_TIMEOUT_IN_MINUTES || 1;
-    this.firstCardBanTimeoutInMinutes =
-      +process.env.FIRST_CARD_BAN_MINUTES || 60;
-    this.secondCardBanTimeoutInHours = +process.env.SECOND_CARD_BAN_HOURS || 24;
+    this.otpTimeout = env.OTP_TIMEOUT_IN_MINUTES;
+    this.firstCardBanTimeoutInMinutes = env.FIRST_CARD_BAN_MINUTES;
+    this.secondCardBanTimeoutInHours = env.SECOND_CARD_BAN_HOURS;
   }
 
   async create(createCardDto: ICreateCard): Promise<ICreateCardResponse> {

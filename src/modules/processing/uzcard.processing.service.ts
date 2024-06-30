@@ -15,6 +15,7 @@ import { card, cashbox, transaction } from '@prisma/client';
 import { IPayByToken } from './interfaces/payByToken.interface';
 import { NotificationService } from '../notification/notification.service';
 import { IConfirmHoldResponse } from './interfaces/confirmHoldResponse.interface';
+import { env } from 'src/common/config/env.config';
 
 interface IGetDataByToken {
   fullname: string;
@@ -55,11 +56,11 @@ export class UzcardProcessingService {
     private readonly notificationService: NotificationService,
     private readonly prisma: PrismaService,
   ) {
-    this.uzCardLogin = process.env.UZCARD_LOGIN;
-    this.uzCardPassword = process.env.UZCARD_PASSWORD;
-    this.uzCardUrl = process.env.UZCARD_API_URL;
-    this.comissionPercent = +process.env.P2P_COMISSION_IN_PERCENT || 1;
-    this.p2pCashboxId = +process.env.P2P_CASHBOX_ID || 2;
+    this.uzCardLogin = env.UZCARD_LOGIN;
+    this.uzCardPassword = env.UZCARD_PASSWORD;
+    this.uzCardUrl = env.UZCARD_API_URL;
+    this.comissionPercent = env.P2P_COMISSION_IN_PERCENT;
+    this.p2pCashboxId = env.P2P_CASHBOX_ID;
   }
 
   async sendOtp(

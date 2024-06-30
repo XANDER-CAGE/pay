@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { ValidateDto } from 'src/modules/home/dto/validate.dto';
 import { CardsService } from '../cards/cards.service';
+import { env } from 'src/common/config/env.config';
 
 @Injectable()
 export class HomeService {
@@ -15,9 +16,8 @@ export class HomeService {
     private readonly prisma: PrismaService,
     private readonly cardService: CardsService,
   ) {
-    this.otpTimeout = Number(process.env.OTP_TIMEOUT_IN_MINUTES) || 2;
-    this.cryptoPayTimeout =
-      Number(process.env.PAY_VIA_CRYPTO_TIMEOUT_IN_MINUTES) || 10;
+    this.otpTimeout = env.OTP_TIMEOUT_IN_MINUTES;
+    this.cryptoPayTimeout = env.PAY_VIA_CRYPTO_TIMEOUT_IN_MINUTES;
   }
   async validate(dto: ValidateDto) {
     const payment = await this.prisma.transaction.findFirst({
