@@ -5,13 +5,39 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { HttpExceptionFilter } from './common/exception-filters/http.exception-filter.js';
 import { join } from 'path';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { env } from './common/config/env.config.js';
 
-const port = process.env.PORT;
-const nodeEnv = process.env.NODE_ENV;
+const port = env.PORT;
+const nodeEnv = env.NODE_ENV;
+const rmqUser = env.RABBITMQ_USER;
+const rmqPassword = env.RABBITMQ_PASSWORD;
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['error', 'warn', 'verbose', 'debug'],
+  });
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: [`amqp://${rmqUser}:${rmqPassword}@localhost:5672`],
+      queue: 'hook_queue',
+      noAck: false,
+      queueOptions: {
+        durable: true,
+      },
+    },
+  });
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: [`amqp://${rmqUser}:${rmqPassword}@localhost:5672`],
+      queue: 'f_queue',
+      noAck: false,
+      queueOptions: {
+        durable: true,
+      },
+    },
   });
   app.enableCors({
     origin: true,
@@ -35,7 +61,9 @@ async function bootstrap() {
   app.setBaseViewsDir(join(__dirname, '..', 'views'));
   app.setViewEngine('ejs');
   const now = new Date();
-  await app.listen(port, () => console.log(`Running on port ${port} 🏃 at ${now.toISOString()}`));
-
+  await app.startAllMicroservices();
+  await app.listen(port, () =>
+    console.log(`Running on port ${port} 🏃 at ${now.toISOString()}`),
+  );
 }
 bootstrap();

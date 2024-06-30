@@ -22,6 +22,8 @@ import { HookService } from '../hook/hook.service';
 import { IConfirmHoldResponse } from '../processing/interfaces/confirmHoldResponse.interface';
 import { PaymentsTESTService } from './payments.test.service';
 import { isObject } from 'lodash';
+import { env } from 'src/common/config/env.config';
+import { HookDto } from '../hook/dto/hook.dto';
 
 type otp = {
   attempts: number;
@@ -81,8 +83,7 @@ export class PaymentsService {
     private readonly hookService: HookService,
     private readonly testService: PaymentsTESTService,
   ) {
-    this.cryptoPayTimeout =
-      Number(process.env.PAY_VIA_CRYPTO_TIMEOUT_IN_MINUTES) || 10;
+    this.cryptoPayTimeout = env.PAY_VIA_CRYPTO_TIMEOUT_IN_MINUTES;
   }
   async charge(data: ICardsChargeData) {
     const { success: cryptoSuccess, decryptedData } =
@@ -207,7 +208,7 @@ export class PaymentsService {
       Model: {
         TransactionId: payment.id,
         PaReq: customDataEncoded,
-        AcsUrl: process.env.CURRENT_API_URL + '/check_areq',
+        AcsUrl: env.CURRENT_API_URL + '/check_areq',
         ThreeDsCallbackId: '7be4d37f0a434c0a8a7fc0e328368d7d',
         IFrameIsAllowed: true,
       },
@@ -239,7 +240,7 @@ export class PaymentsService {
     }
     console.log('AFTER CHANGE', dto.TransactionId);
     const transaction = await this.prisma.transaction.findFirst({
-      where: { id: +dto.TransactionId },
+      where: { id: transactionId },
       include: {
         cashbox: { include: { company: true, hook: true } },
         card: true,
@@ -268,12 +269,8 @@ export class PaymentsService {
       where: { cashbox_id: cashbox.id, is_active: true, type: 'check' },
     });
     if (checkHook) {
-      const res = await this.hookService.hook(
-        checkHook.url,
-        'Payment',
-        transaction,
-        card,
-      );
+      const hookDto = new HookDto(transaction, card, 'Payment', checkHook.url);
+      const res = await this.hookService.sendToHookQueue(hookDto);
       if (res.code != 0) {
         const model = CoreApiResponse.invalidErrorCode();
         this.prisma.transaction.update({
@@ -317,14 +314,26 @@ export class PaymentsService {
         where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
       });
       if (payHook) {
-        this.hookService.hook(payHook.url, 'Payment', updatedPayment, card);
+        const hookDto = new HookDto(
+          updatedPayment,
+          card,
+          'Payment',
+          payHook.url,
+        );
+        this.hookService.sendToHookQueue(hookDto);
       }
     } else {
       const failHook = await this.prisma.hook.findFirst({
         where: { cashbox_id: cashbox.id, is_active: true, type: 'fail' },
       });
       if (failHook) {
-        this.hookService.hook(failHook.url, 'Payment', updatedPayment, card);
+        const hookDto = new HookDto(
+          updatedPayment,
+          card,
+          'Payment',
+          failHook.url,
+        );
+        this.hookService.sendToHookQueue(hookDto);
       }
     }
     return resFrom3ds;
@@ -486,7 +495,13 @@ export class PaymentsService {
       const updatedPayment = await this.prisma.transaction.findFirst({
         where: { id: transaction.id },
       });
-      this.hookService.hook(confirmHook.url, 'Payment', updatedPayment, card);
+      const hookDto = new HookDto(
+        updatedPayment,
+        card,
+        'Payment',
+        confirmHook.url,
+      );
+      this.hookService.sendToHookQueue(hookDto);
     }
     if (processingRes.Success) {
       this.cancelHoldTimeout(transaction.id);
@@ -554,7 +569,13 @@ export class PaymentsService {
       const updatedPayment = await this.prisma.transaction.findFirst({
         where: { id: transaction.id },
       });
-      this.hookService.hook(refundHook.url, 'Refund', updatedPayment, card);
+      const hookDto = new HookDto(
+        updatedPayment,
+        card,
+        'Refund',
+        refundHook.url,
+      );
+      this.hookService.sendToHookQueue(hookDto);
     }
     return {
       Model: {
@@ -652,12 +673,8 @@ export class PaymentsService {
       where: { cashbox_id: cashbox.id, is_active: true, type: 'check' },
     });
     if (checkHook) {
-      const res = await this.hookService.hook(
-        checkHook.url,
-        'Payment',
-        transaction,
-        card,
-      );
+      const hookDto = new HookDto(transaction, card, 'Payment', checkHook.url);
+      const res = await this.hookService.sendToHookQueue(hookDto);
       if (res.code != 0) {
         const model = CoreApiResponse.invalidErrorCode();
         this.prisma.transaction.update({
@@ -700,7 +717,13 @@ export class PaymentsService {
         const updatedPayment = await this.prisma.transaction.findFirst({
           where: { id: transaction.id },
         });
-        this.hookService.hook(payHook.url, 'Payment', updatedPayment, card);
+        const hookDto = new HookDto(
+          updatedPayment,
+          card,
+          'Payment',
+          payHook.url,
+        );
+        this.hookService.sendToHookQueue(hookDto);
       }
     } else {
       const failHook = await this.prisma.hook.findFirst({
@@ -710,7 +733,13 @@ export class PaymentsService {
         const updatedPayment = await this.prisma.transaction.findFirst({
           where: { id: transaction.id },
         });
-        this.hookService.hook(failHook.url, 'Payment', updatedPayment, card);
+        const hookDto = new HookDto(
+          updatedPayment,
+          card,
+          'Payment',
+          failHook.url,
+        );
+        this.hookService.sendToHookQueue(hookDto);
       }
     }
     return model;

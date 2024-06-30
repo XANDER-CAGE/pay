@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { HookService } from './hook.service';
+import { hookQueue } from '../queue/queues/hook.queue';
 
 @Module({
-  controllers: [],
+  imports: [hookQueue],
   providers: [HookService],
   exports: [HookService],
 })

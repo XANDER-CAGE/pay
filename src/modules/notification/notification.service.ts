@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import axios from 'axios';
 import { ISendSuccessSms } from 'src/common/interfaces/sendSuccessSms.interface';
 import { PrismaService } from '../prisma/prisma.service';
+import { env } from 'src/common/config/env.config';
 
 @Injectable()
 export class NotificationService {
@@ -14,10 +15,10 @@ export class NotificationService {
   private originator: string;
   constructor(private readonly prisma: PrismaService) {
     this.messageId = Math.floor(Math.random() * 900000000) + 100000000;
-    this.username = process.env.PLAYMOBILE_USERNAME;
-    this.password = process.env.PLAYMOBILE_PASSWORD;
-    this.endpoint = process.env.PLAYMOBILE_ENDPOINT;
-    this.originator = process.env.PLAYMOBILE_ORIGINATOR;
+    this.username = env.PLAYMOBILE_USERNAME;
+    this.password = env.PLAYMOBILE_PASSWORD;
+    this.endpoint = env.PLAYMOBILE_ENDPOINT;
+    this.originator = env.PLAYMOBILE_ORIGINATOR;
   }
 
   async send(phone: string, message: string) {

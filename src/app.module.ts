@@ -12,6 +12,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { BinsModule } from './modules/bins/bins.module';
 import { CardsModule } from './modules/cards/cards.module';
 import { HookModule } from './modules/hook/hook.module';
+import { QueueModule } from './modules/queue/queue.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { HookModule } from './modules/hook/hook.module';
     BinsModule,
     CardsModule,
     HookModule,
+    QueueModule,
   ],
   controllers: [],
   providers: [],
