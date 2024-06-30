@@ -72,6 +72,7 @@ interface IP2P {
 @Injectable()
 export class PaymentsService {
   private readonly cryptoPayTimeout: number;
+  private readonly currentApiUrl: string;
   constructor(
     @Inject(getLocationSymbol)
     private readonly getLocationUtil: GetLocationUtil,
@@ -84,6 +85,7 @@ export class PaymentsService {
     private readonly testService: PaymentsTESTService,
   ) {
     this.cryptoPayTimeout = env.PAY_VIA_CRYPTO_TIMEOUT_IN_MINUTES;
+    this.currentApiUrl = env.CURRENT_API_URL;
   }
   async charge(data: ICardsChargeData) {
     const { success: cryptoSuccess, decryptedData } =
@@ -208,7 +210,7 @@ export class PaymentsService {
       Model: {
         TransactionId: payment.id,
         PaReq: customDataEncoded,
-        AcsUrl: env.CURRENT_API_URL + '/check_areq',
+        AcsUrl: this.currentApiUrl + '/check_areq',
         ThreeDsCallbackId: '7be4d37f0a434c0a8a7fc0e328368d7d',
         IFrameIsAllowed: true,
       },

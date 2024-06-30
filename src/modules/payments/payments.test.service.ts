@@ -93,6 +93,7 @@ export class PaymentsTESTService {
     await this.prisma.transaction.update({
       where: {
         id: transaction.id,
+        is_test: true,
       },
       data: {
         refunded_date: new Date(),
@@ -105,6 +106,7 @@ export class PaymentsTESTService {
     await this.prisma.transaction.update({
       where: {
         id: transaction.id,
+        is_test: true,
       },
       data: {
         status: 'Cancelled',
@@ -122,6 +124,7 @@ export class PaymentsTESTService {
       where: {
         id: transaction.id,
         amount: amount,
+        is_test: true,
       },
       data: {
         status: 'Completed',
