@@ -235,6 +235,36 @@ model bank {
   epos         epos[]
 }
 
+model order {
+  id                  Int      @id @default(autoincrement())
+  uniqueId            String   @unique
+  Amount              Float
+  Currency            String?  @default("UZS")
+  Description         String
+  Email               String?
+  RequireConfirmation Boolean?
+  SendEmail           Boolean?
+  InvoiceId           String?
+  AccountId           String?
+  OfferUri            String?
+  Phone               String?
+  SendSms             Boolean?
+  SendViber           Boolean?
+  CultureName         String?
+  SubscriptionBehavior String?
+  SuccessRedirectUrl  String?
+  FailRedirectUrl     String?
+  JsonData            Json?
+  Url                 String
+  CreatedDate         DateTime @default(now())
+  CreatedDateIso      DateTime @default(now())
+  PaymentDate         DateTime?
+  PaymentDateIso      DateTime?
+  StatusCode          Int
+  Status              String
+  InternalId          Int
+}
+
 enum payment_status {
   Authorized
   Pending
