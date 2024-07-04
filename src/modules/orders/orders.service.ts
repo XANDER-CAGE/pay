@@ -29,7 +29,7 @@ export class OrdersService {
         SuccessRedirectUrl: createOrderDto.SuccessRedirectUrl,
         FailRedirectUrl: createOrderDto.FailRedirectUrl,
         JsonData: createOrderDto.JsonData,
-        Url: `https://orders.gpay.uz/d/${uniqueId}`,
+        Url: `https://orders.cloudpayments.ru/d/${uniqueId}`,
         CreatedDateIso: new Date().toISOString(),
         StatusCode: 0,
         Status: 'Created',
@@ -39,9 +39,9 @@ export class OrdersService {
     return response;
   }
 
-  async getOrder(id: string) {
+  async getOrderById(uniqueId: string) {
     return this.prisma.order.findUnique({
-      where: { uniqueId: id },
+      where: { uniqueId },
     });
   }
 }
