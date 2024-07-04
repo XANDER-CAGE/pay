@@ -1,10 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateOrderDto {
-  @ApiProperty({ example: 10.0, description: 'Cумма платежа в валюте, разделитель точка. Количество не нулевых знаков после точки – 2' })
+  @ApiProperty({ example: 10.0, description: 'Сумма платежа в валюте, разделитель точка. Количество не нулевых знаков после точки – 2' })
   Amount: number;
 
-  @ApiProperty({ example: 'UZS', description: 'Валюта UZS/RUB/USD/EUR/GBP', required: false })
+  @ApiProperty({ example: 'RUB', description: 'Валюта RUB/USD/EUR/GBP', required: false })
   Currency?: string;
 
   @ApiProperty({ example: 'Оплата на сайте example.com', description: 'Назначение платежа в свободной форме' })
