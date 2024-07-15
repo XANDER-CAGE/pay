@@ -591,7 +591,6 @@ export class PaymentsService {
         AccountId: String(dto.accountId),
         Token: dto.token,
       });
-      model = CoreApiResponse.notPermitted();
       await this.prisma.transaction.create({
         data: {
           amount: dto.amount,
