@@ -239,7 +239,7 @@ export class PaymentsService {
     }
     console.log('AFTER CHANGE', dto.TransactionId);
     const transaction = await this.prisma.transaction.findFirst({
-      where: { id: +dto.TransactionId },
+      where: { id: transactionId },
       include: {
         cashbox: { include: { company: true, hook: true } },
         card: true,

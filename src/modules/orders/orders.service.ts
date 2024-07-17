@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { OrderResponseDto } from './dto/order-response.dto';
 
 @Injectable()
 export class OrdersService {
@@ -45,12 +44,14 @@ export class OrdersService {
         Currency: createdOrder.currency,
         CurrencyCode: 0,
         Email: createdOrder.email,
-        Phone: createdOrder.phone ?? "",
+        Phone: createdOrder.phone ?? '',
         Description: createdOrder.description,
         RequireConfirmation: createdOrder.require_confirmation,
         Url: createdOrder.url,
-        CultureName: createdOrder.culture_name ?? "ru-RU",
-        CreatedDate: `/Date(${new Date(createdOrder.created_date_iso).getTime()})/`,
+        CultureName: createdOrder.culture_name ?? 'ru-RU',
+        CreatedDate: `/Date(${new Date(
+          createdOrder.created_date_iso,
+        ).getTime()})/`,
         CreatedDateIso: createdOrder.created_date_iso,
         PaymentDate: createdOrder.payment_date ?? null,
         PaymentDateIso: createdOrder.payment_date_iso ?? null,
@@ -64,7 +65,7 @@ export class OrdersService {
   }
 
   async getOrderById(uniqueId: string) {
-    return this.prisma.order.findUnique({
+    return this.prisma.order.findFirst({
       where: { unique_id: uniqueId },
     });
   }
