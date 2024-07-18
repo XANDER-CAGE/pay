@@ -16,6 +16,7 @@ export class OrdersService {
     const defaultDescription =
       dto.Description || 'Оплата в ' + req.company.trade_name;
     const defaultInvoice = dto.InvoiceId || Date.now().toString();
+    const pk = req.cashbox.public_id;
     const createdOrder = await this.prisma.order.create({
       data: {
         unique_id: uniqueId,
@@ -43,7 +44,7 @@ export class OrdersService {
         internal_id: Math.floor(Math.random() * 100000),
       },
     });
-    const url = `https://widget.gpay.uz/?publicId=pk_f5619c7b6c83eac123afa75e39606&amount=${
+    const url = `https://widget.gpay.uz/?publicId=${pk}&amount=${
       dto.Amount
     }&currency=UZS&description=${defaultDescription
       .split(' ')
