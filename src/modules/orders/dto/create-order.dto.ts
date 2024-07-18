@@ -1,122 +1,80 @@
 import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsBoolean,
+  IsEmail,
+  IsJSON,
+  IsNumber,
+  IsPhoneNumber,
+  IsString,
+  IsUrl,
+} from 'class-validator';
 
 export class CreateOrderDto {
-  @ApiProperty({
-    example: 10.0,
-    description:
-      'Сумма платежа в валюте, разделитель точка. Количество не нулевых знаков после точки – 2',
-  })
+  @ApiProperty({ example: 10.0 })
+  @IsNumber()
   Amount: number;
 
-  @ApiProperty({
-    example: 'RUB',
-    description: 'Валюта RUB/USD/EUR/GBP',
-    required: false,
-  })
+  @ApiProperty({ example: 'UZS', required: false })
+  @IsString()
   Currency?: string;
 
-  @ApiProperty({
-    example: 'Оплата на сайте example.com',
-    description: 'Назначение платежа в свободной форме',
-  })
+  @ApiProperty({ example: 'Оплата на сайте example.com' })
+  @IsString()
   Description: string;
 
-  @ApiProperty({
-    example: 'client@test.local',
-    description: 'E-mail плательщика',
-    required: false,
-  })
+  @ApiProperty({ example: 'client@test.local', required: false })
+  @IsEmail()
   Email?: string;
 
-  @ApiProperty({
-    example: true,
-    description: 'Платеж будет выполнен по двухстадийной схеме',
-    required: false,
-  })
+  @ApiProperty({ example: true, required: false })
+  @IsBoolean()
   RequireConfirmation?: boolean;
 
-  @ApiProperty({
-    example: false,
-    description: 'Плательщик получит письмо со ссылкой на оплату',
-    required: false,
-  })
+  @ApiProperty({ example: false, required: false })
+  @IsBoolean()
   SendEmail?: boolean;
 
-  @ApiProperty({
-    example: '12345',
-    description: 'Номер заказа в вашей системе',
-    required: false,
-  })
+  @ApiProperty({ example: '12345', required: false })
+  @IsString()
   InvoiceId?: string;
 
-  @ApiProperty({
-    example: 'user123',
-    description: 'Идентификатор пользователя в вашей системе',
-    required: false,
-  })
+  @ApiProperty({ example: 'user123', required: false })
+  @IsString()
   AccountId?: string;
 
-  @ApiProperty({
-    example: 'https://example.com/offer',
-    description:
-      'Ссылка на оферту, которая будет показываться на странице заказа',
-    required: false,
-  })
+  @ApiProperty({ example: 'https://example.com/offer', required: false })
+  @IsString()
   OfferUri?: string;
 
-  @ApiProperty({
-    example: '+1234567890',
-    description: 'Номер телефона плательщика в произвольном формате',
-    required: false,
-  })
+  @ApiProperty({ example: '+1234567890', required: false })
+  @IsPhoneNumber()
   Phone?: string;
 
-  @ApiProperty({
-    example: true,
-    description: 'Плательщик получит СМС со ссылкой на оплату',
-    required: false,
-  })
+  @ApiProperty({ example: true, required: false })
+  @IsBoolean()
   SendSms?: boolean;
 
-  @ApiProperty({
-    example: true,
-    description: 'Плательщик получит сообщение в Viber со ссылкой на оплату',
-    required: false,
-  })
+  @ApiProperty({ example: true, required: false })
+  @IsBoolean()
   SendViber?: boolean;
 
-  @ApiProperty({
-    example: 'ru-RU',
-    description: 'Язык уведомлений',
-    required: false,
-  })
+  @ApiProperty({ example: 'ru-RU', required: false })
+  @IsString()
   CultureName?: string;
 
-  @ApiProperty({
-    example: 'CreateMonthly',
-    description: 'Для создания платежа с подпиской',
-    required: false,
-  })
+  @ApiProperty({ example: 'CreateMonthly', required: false })
+  @IsString()
   SubscriptionBehavior?: string;
 
-  @ApiProperty({
-    example: 'https://example.com/success',
-    description: 'Адрес страницы для редиректа при успешной оплате',
-    required: false,
-  })
+  @ApiProperty({ example: 'https://example.com/success', required: false })
+  @IsUrl()
   SuccessRedirectUrl?: string;
 
-  @ApiProperty({
-    example: 'https://example.com/fail',
-    description: 'Адрес страницы для редиректа при неуспешной оплате',
-    required: false,
-  })
+  @ApiProperty({ example: 'https://example.com/fail', required: false })
+  @IsUrl()
   FailRedirectUrl?: string;
 
-  @ApiProperty({
-    description:
-      'Любые другие данные, которые будут связаны с транзакцией, в том числе инструкции для формирования онлайн-чека должны обёртываться в объект',
-    required: false,
-  })
+  @ApiProperty({ required: false })
+  @IsJSON()
   JsonData?: string;
 }
