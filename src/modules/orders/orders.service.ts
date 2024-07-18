@@ -43,7 +43,7 @@ export class OrdersService {
         internal_id: Math.floor(Math.random() * 100000),
       },
     });
-    const url = `https://widget.gpay.uz/?publicId=pk_f5619c7b6c83eac123afa75e39606&amount=${dto.Amount}&currency=UZS&description=${defaultDescription}&email=kaspergreen123%40gmail.com&invoiceId=${defaultInvoice}&accountId=${dto.AccountId}&skin=classic`;
+    const url = `"https://widget.gpay.uz/?publicId=pk_f5619c7b6c83eac123afa75e39606&amount=${dto.Amount}&currency=UZS&description=${defaultDescription}&email=kaspergreen123%40gmail.com&invoiceId=${defaultInvoice}&accountId=${dto.AccountId}&skin=classic"`;
     if (dto.SendSms) {
       await this.notificationService.send(
         dto.Phone,
