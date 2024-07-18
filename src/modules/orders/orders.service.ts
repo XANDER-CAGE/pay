@@ -1,33 +1,41 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { NotificationService } from '../notification/notification.service';
+import { MyReq } from 'src/common/interfaces/myReq.interface';
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
-  async createOrder(createOrderDto: CreateOrderDto) {
+  async createOrder(dto: CreateOrderDto, req: MyReq) {
     const uniqueId = generateUniqueId();
+    const defaultDescription =
+      dto.Description || 'Оплата в ' + req.company.trade_name;
+    const defaultInvoice = dto.InvoiceId || Date.now().toString();
     const createdOrder = await this.prisma.order.create({
       data: {
         unique_id: uniqueId,
-        amount: createOrderDto.Amount,
-        currency: createOrderDto.Currency ?? 'UZS',
-        description: createOrderDto.Description,
-        email: createOrderDto.Email,
-        require_confirmation: createOrderDto.RequireConfirmation,
-        send_email: createOrderDto.SendEmail,
-        invoice_id: createOrderDto.InvoiceId,
-        account_id: createOrderDto.AccountId,
-        offer_uri: createOrderDto.OfferUri,
-        phone: createOrderDto.Phone,
-        send_sms: createOrderDto.SendSms,
-        send_viber: createOrderDto.SendViber,
-        culture_name: createOrderDto.CultureName,
-        subscription_behavior: createOrderDto.SubscriptionBehavior,
-        success_redirect_url: createOrderDto.SuccessRedirectUrl,
-        fail_redirect_url: createOrderDto.FailRedirectUrl,
-        json_data: createOrderDto.JsonData,
+        amount: dto.Amount,
+        currency: dto.Currency ?? 'UZS',
+        description: defaultDescription,
+        email: dto.Email,
+        require_confirmation: dto.RequireConfirmation,
+        send_email: dto.SendEmail,
+        invoice_id: defaultInvoice,
+        account_id: dto.AccountId,
+        offer_uri: dto.OfferUri,
+        phone: dto.Phone,
+        send_sms: dto.SendSms,
+        send_viber: dto.SendViber,
+        culture_name: dto.CultureName,
+        subscription_behavior: dto.SubscriptionBehavior,
+        success_redirect_url: dto.SuccessRedirectUrl,
+        fail_redirect_url: dto.FailRedirectUrl,
+        json_data: dto.JsonData,
         url: `https://orders.gpay.uz/d/${uniqueId}`,
         created_date_iso: new Date().toISOString(),
         status_code: 0,
@@ -35,7 +43,13 @@ export class OrdersService {
         internal_id: Math.floor(Math.random() * 100000),
       },
     });
-
+    const url = `https://widget.gpay.uz/?publicId=pk_f5619c7b6c83eac123afa75e39606&amount=${dto.Amount}&currency=UZS&description=${defaultDescription}&email=kaspergreen123%40gmail.com&invoiceId=${defaultInvoice}&accountId=${dto.AccountId}&skin=classic`;
+    if (dto.SendSms) {
+      await this.notificationService.send(
+        dto.Phone,
+        `Ссылка для оплаты ${url}`,
+      );
+    }
     return {
       Model: {
         Id: createdOrder.unique_id,

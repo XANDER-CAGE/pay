@@ -64,6 +64,8 @@ export class AuthGuard implements CanActivate {
     }
     request.basicAuthLogin = public_id;
     request.cashboxId = cashbox.id;
+    request.cashbox = cashbox;
+    request.company = cashbox.company;
     request.sessionId = session.id;
     request.organizationId = cashbox.company.organization_id;
     return true;

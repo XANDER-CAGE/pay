@@ -87,6 +87,12 @@ export class PaymentsService {
   async charge(data: ICardsChargeData) {
     const { success: cryptoSuccess, decryptedData } =
       this.decryptService.decryptCardCryptogram(data.cardCryptoGramPacket);
+    const order = await this.prisma.order.findFirst({
+      where: { invoice_id: data.invoiceId },
+    });
+    if (order && order.amount != data.amount) {
+      throw new NotAcceptableException('Different amount');
+    }
     const cashbox = await this.prisma.cashbox.findFirst({
       where: { public_id: decryptedData.decryptedLogin, is_active: true },
     });
