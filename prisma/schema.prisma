@@ -12,12 +12,12 @@ model bin {
   bin                Int         @unique
   bank_id            Int?
   currency           String?     @db.VarChar
-  bank_name          String?     @db.VarChar
   hide_cvv_input     Boolean
   processing         processing?
   cobadge_processing processing?
   created_at         DateTime?   @default(now()) @db.Timestamp(6)
   updated_at         DateTime?   @default(now()) @db.Timestamp(6)
+  bank_name          String?     @db.VarChar
   bank               bank?       @relation(fields: [bank_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([bin])
@@ -36,10 +36,10 @@ model card {
   tk                    String?       @db.VarChar
   cryptogram            String        @db.VarChar
   pan_ref               String?       @db.VarChar
-  bank_name             String?       @db.VarChar
   status                card_status?
   created_at            DateTime?     @default(now()) @db.Timestamp(6)
   updated_at            DateTime?     @default(now()) @db.Timestamp(6)
+  bank_name             String?       @db.VarChar
   organization          organization  @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   otp                   otp?
   transaction           transaction[]
