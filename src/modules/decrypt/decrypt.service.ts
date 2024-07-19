@@ -48,10 +48,15 @@ export class DecryptService {
     const decryptedDataParts = decryptedData.split('@');
     const decryptedLogin = decryptedDataParts[decryptedDataParts.length - 1];
     const [pan, expiry] = decryptedData.split('@');
+    const panWithoutSpace = pan.split(' ').join('');
     const formattedExpiry = this.formatExpDate(expiry);
     return {
       success: true,
-      decryptedData: { pan, decryptedLogin, expiry: formattedExpiry },
+      decryptedData: {
+        pan: panWithoutSpace,
+        decryptedLogin,
+        expiry: formattedExpiry,
+      },
     };
   }
 
