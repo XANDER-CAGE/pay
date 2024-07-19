@@ -17,6 +17,16 @@ export class OrdersService {
       dto.Description || 'Оплата в ' + req.company.trade_name;
     const defaultInvoice = dto.InvoiceId || Date.now().toString();
     const pk = req.cashbox.public_id;
+    const url = `https://widget.gpay.uz/?publicId=${pk}&amount=${
+      dto.Amount
+    }&currency=UZS&description=${defaultDescription
+      .split(' ')
+      .join(
+        '%',
+      )}&email=kaspergreen123%40gmail.com&invoiceId=${defaultInvoice}&accountId=${
+      dto.AccountId
+    }&skin=classic`;
+
     const createdOrder = await this.prisma.order.create({
       data: {
         unique_id: uniqueId,
@@ -37,23 +47,14 @@ export class OrdersService {
         success_redirect_url: dto.SuccessRedirectUrl,
         fail_redirect_url: dto.FailRedirectUrl,
         json_data: dto.JsonData,
-        url: `https://orders.gpay.uz/d/${uniqueId}`,
+        url,
         created_date_iso: new Date().toISOString(),
         status_code: 0,
         status: 'Created',
         internal_id: Math.floor(Math.random() * 100000),
       },
     });
-    const url = `https://widget.gpay.uz/?publicId=${pk}&amount=${
-      dto.Amount
-    }&currency=UZS&description=${defaultDescription
-      .split(' ')
-      .join(
-        '%',
-      )}&email=kaspergreen123%40gmail.com&invoiceId=${defaultInvoice}&accountId=${
-      dto.AccountId
-    }&skin=classic`;
-    if (dto.SendSms) {
+    if (dto.SendSms || dto.Phone) {
       await this.notificationService.send(
         dto.Phone,
         `Ссылка для оплаты ${url}`,
