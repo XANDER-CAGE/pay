@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Param,
   Post,
   Req,
@@ -21,6 +22,7 @@ export class OrdersController {
   @Post('create')
   @ApiBody({ type: CreateOrderDto })
   @UseGuards(AuthGuard)
+  @HttpCode(200)
   @ApiResponse({ status: 200, description: 'Order created successfully.' })
   @ApiResponse({ status: 400, description: 'Invalid request parameters.' })
   async createOrder(@Body() createOrderDto: CreateOrderDto, @Req() req: MyReq) {
