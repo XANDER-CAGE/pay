@@ -29,7 +29,6 @@ export class DecryptService {
           Buffer.from(encryptedData, 'base64'),
         )
         .toString('utf8');
-
       return { success: true, decryptedData };
     } catch (error) {
       return { success: false, decryptedData: null };
