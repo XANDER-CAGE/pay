@@ -21,7 +21,7 @@ export class OrdersController {
   @Post('create')
   @ApiBody({ type: CreateOrderDto })
   @UseGuards(AuthGuard)
-  @ApiResponse({ status: 201, description: 'Order created successfully.' })
+  @ApiResponse({ status: 200, description: 'Order created successfully.' })
   @ApiResponse({ status: 400, description: 'Invalid request parameters.' })
   async createOrder(@Body() createOrderDto: CreateOrderDto, @Req() req: MyReq) {
     return this.ordersService.createOrder(createOrderDto, req);
