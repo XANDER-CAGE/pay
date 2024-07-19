@@ -1,14 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
-  IsEmail,
-  IsJSON,
   IsNotEmpty,
   IsNumber,
   IsOptional,
-  IsPhoneNumber,
   IsString,
-  IsUrl,
 } from 'class-validator';
 
 export class CreateOrderDto {
@@ -29,7 +25,6 @@ export class CreateOrderDto {
 
   @ApiProperty({ example: 'client@test.local', required: false })
   @IsOptional()
-  @IsEmail()
   Email?: string;
 
   @ApiProperty({ example: true, required: false })
@@ -59,7 +54,6 @@ export class CreateOrderDto {
 
   @ApiProperty({ example: '+1234567890', required: false })
   @IsOptional()
-  @IsPhoneNumber()
   Phone?: string;
 
   @ApiProperty({ example: true, required: false })
@@ -74,26 +68,21 @@ export class CreateOrderDto {
 
   @ApiProperty({ example: 'ru-RU', required: false })
   @IsOptional()
-  @IsString()
   CultureName?: string;
 
   @ApiProperty({ example: 'CreateMonthly', required: false })
   @IsOptional()
-  @IsString()
   SubscriptionBehavior?: string;
 
   @ApiProperty({ example: 'https://example.com/success', required: false })
   @IsOptional()
-  @IsUrl()
   SuccessRedirectUrl?: string;
 
   @ApiProperty({ example: 'https://example.com/fail', required: false })
   @IsOptional()
-  @IsUrl()
   FailRedirectUrl?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @IsJSON()
-  JsonData?: string;
+  JsonData?: object;
 }

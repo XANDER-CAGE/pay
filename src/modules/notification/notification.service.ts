@@ -23,6 +23,7 @@ export class NotificationService {
   async send(phone: string, message: string) {
     this.message = message;
     this.phone = phone.split('+').join('');
+    this.phone = phone.length == 7 ? '998' + this.phone : this.phone;
     const validationResult = this.customValidation();
     if (validationResult.status !== 200) {
       return validationResult;
