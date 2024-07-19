@@ -26,7 +26,7 @@ export class OrdersService {
       )}&email=kaspergreen123%40gmail.com&invoiceId=${defaultInvoice}&accountId=${
       dto.AccountId
     }&skin=classic`;
-
+    const isoWithoutZ = new Date().toISOString().slice(0, -1);
     const createdOrder = await this.prisma.order.create({
       data: {
         unique_id: uniqueId,
@@ -48,7 +48,7 @@ export class OrdersService {
         fail_redirect_url: dto.FailRedirectUrl,
         json_data: dto.JsonData,
         url,
-        created_date_iso: new Date().toISOString(),
+        created_date_iso: isoWithoutZ,
         status_code: 0,
         status: 'Created',
         internal_id: Math.floor(Math.random() * 100000),
