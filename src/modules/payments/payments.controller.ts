@@ -35,6 +35,9 @@ export class PaymentsController {
 
   @Post('cards/charge')
   async charge(@Body() dto: PaymentChargeDto, @Req() req: MyReq): Promise<any> {
+    if (dto.AccountId == '1') {
+      console.log('CAHRGE DTO', dto);
+    }
     const requestId: string = req.headers['x-request-id'] as string;
     const cache: string = await this.cacheManager.get(requestId);
     if (cache) {
