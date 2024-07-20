@@ -65,8 +65,8 @@ export class HomeController {
       let md = dto.md;
       if (dto.TermUrl === 'https://widget.gpay.uz/3ds-callback') {
         md = JSON.stringify({
-          SuccessUrl: 'https://widget.gpay.uz/app/result.html?Success',
-          FailUrl: 'https://widget.cloudpayments.ru/app/result.html?Fail',
+          SuccessUrl: 'https://widget.gpay.uz/success',
+          FailUrl: 'https://widget.gpay.uz/error',
           TransactionId: dto.md,
         });
       }
