@@ -318,10 +318,14 @@ export class PaymentsService {
     const updatedPayment = await this.prisma.transaction.findFirst({
       where: { id: transaction.id },
     });
+    console.log('Res from 3ds', resFrom3ds);
+
     if (resFrom3ds.Success) {
       const payHook = await this.prisma.hook.findFirst({
         where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
       });
+      console.log('Payhook', payHook);
+
       if (payHook) {
         this.hookService.hook(payHook.url, 'Payment', updatedPayment, card);
       }
