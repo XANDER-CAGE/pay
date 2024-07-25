@@ -19,6 +19,8 @@ export class HookService {
     const dto = new HookDto(transaction, card, operationType);
     try {
       const response = await axios.post(webhookUrl, dto);
+      console.log('RESPONSE FROM HOOK', response.data);
+
       return {
         success: true,
         code: response.data.code,
