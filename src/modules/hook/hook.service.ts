@@ -18,6 +18,7 @@ export class HookService {
   ): Promise<HookResponse> {
     const dto = new HookDto(transaction, card, operationType);
     try {
+      console.log('BEFORE HOOOK', webhookUrl, operationType);
       const response = await axios.post(webhookUrl, dto);
       console.log('RESPONSE FROM HOOK', response.data);
 
