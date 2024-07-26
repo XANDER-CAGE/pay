@@ -1,7 +1,19 @@
 import { card, transaction } from '@prisma/client';
 
 export type OperationType = 'Payment' | 'Refund' | 'CardPayout';
+function formatDate(date) {
+  function padTo2Digits(num) {
+    return num.toString().padStart(2, '0');
+  }
+  const year = date.getFullYear();
+  const month = padTo2Digits(date.getMonth() + 1);
+  const day = padTo2Digits(date.getDate());
+  const hours = padTo2Digits(date.getHours());
+  const minutes = padTo2Digits(date.getMinutes());
+  const seconds = padTo2Digits(date.getSeconds());
 
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
 export class HookDto {
   TransactionId: number;
   Amount: number;
@@ -36,7 +48,7 @@ export class HookDto {
     this.CardType = card.processing;
     this.CardExpDate = cardExp;
     this.Currency = 'UZS';
-    this.DateTime = transaction.created_at.toISOString().replace('Z', '');
+    this.DateTime = formatDate(transaction.created_at);
     this.InvoiceId = transaction.invoice_id;
     this.OperationType = operationType;
     this.PaymentAmount = String(transaction.amount);
