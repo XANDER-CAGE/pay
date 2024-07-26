@@ -48,7 +48,7 @@ export class HookDto {
     this.CardType = card.processing;
     this.CardExpDate = cardExp;
     this.Currency = 'UZS';
-    this.DateTime = formatDate(transaction.created_at);
+    this.DateTime = formatDate(transaction.created_at).split(' ').join('T');
     this.InvoiceId = transaction.invoice_id;
     this.OperationType = operationType;
     this.PaymentAmount = String(transaction.amount);
