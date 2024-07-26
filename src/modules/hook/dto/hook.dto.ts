@@ -14,7 +14,7 @@ export class HookDto {
   CardLastFour: string;
   CardType: string;
   CardExpDate: string;
-  TestMode: number;
+  TestMode: boolean;
   Status: string;
   OperationType: string;
   InvoiceId: string;
@@ -42,6 +42,6 @@ export class HookDto {
     this.PaymentAmount = String(transaction.amount);
     this.PaymentCurrency = '860';
     this.Status = transaction.status;
-    this.TestMode = 0;
+    this.TestMode = transaction.is_test;
   }
 }
