@@ -7,7 +7,7 @@ interface IData {
   InvoiceId?: string;
   AccountId?: string;
   Description?: string;
-  Date?: Date;
+  Date?: any;
   IpAddress?: string;
   IpCountry?: string;
   IpCity?: string;
@@ -243,7 +243,7 @@ export class CoreApiResponse {
       CardExpDate: successData.CardExpDate,
       CardHolderMessage: 'Оплата успешно проведена',
       CardType: successData.CardType,
-      Date: successData.Date,
+      Date: successData.Date.toISOString().replace('T', ' ').replace('Z', ''),
       Description: successData.Description,
       GatewayName: successData.GatewayName,
       InvoiceId: successData.InvoiceId,
