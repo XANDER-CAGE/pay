@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Inject,
   Param,
   Post,
@@ -169,6 +170,7 @@ export class PaymentsController {
     return result;
   }
 
+  @HttpCode(200)
   @Post('find')
   async find(@Body() dto: FindDto, @Req() req: MyReq) {
     console.log('PAYMENTS*****FIND', dto);
