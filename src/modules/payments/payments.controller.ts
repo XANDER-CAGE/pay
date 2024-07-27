@@ -24,6 +24,7 @@ import { ConfirmHoldDto } from './dto/confirmHold.dto';
 import { AdminGuard } from 'src/common/guards/admin.guard';
 import { P2PDto } from './dto/p2p.dto';
 import { ApiTags } from '@nestjs/swagger';
+import { FindDto } from './dto/find.dto';
 
 @ApiTags('Transactions')
 @Controller('payments')
@@ -166,6 +167,11 @@ export class PaymentsController {
       await this.cacheManager.set(requestId, JSON.stringify(result));
     }
     return result;
+  }
+
+  @Post('find')
+  async find(@Body() dto: FindDto, @Req() req: MyReq) {
+    return await this.paymentsService.find(dto.InvoiceId, req);
   }
 
   @Get(':transactionId')

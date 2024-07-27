@@ -22,6 +22,7 @@ import { HookService } from '../hook/hook.service';
 import { IConfirmHoldResponse } from '../processing/interfaces/confirmHoldResponse.interface';
 import { PaymentsTESTService } from './payments.test.service';
 import { isObject } from 'lodash';
+import { MyReq } from 'src/common/interfaces/myReq.interface';
 
 type otp = {
   attempts: number;
@@ -821,5 +822,51 @@ export class PaymentsService {
       },
     });
     return res;
+  }
+
+  async find(invoiceId: string, req: MyReq) {
+    const transaction = await this.prisma.transaction.findFirst({
+      where: {
+        cashbox_id: req.cashboxId,
+        invoice_id: invoiceId,
+      },
+      include: { card: true, ip: true, cashbox: true },
+    });
+    if (!transaction) return { Success: false, Message: 'Not found' };
+    const card = transaction.card;
+    const ip = transaction.ip;
+    const cashbox = transaction.cashbox;
+    const data = {
+      AccountId: transaction.account_id,
+      Amount: Number(transaction.amount),
+      CardExpDate: card.expiry,
+      CardType: card.processing,
+      Date: transaction.created_at,
+      Description: transaction.description,
+      GatewayName: card.bank_name,
+      InvoiceId: transaction.invoice_id,
+      IpAddress: ip.ip_address,
+      IpCity: ip.city,
+      IpCountry: ip.country,
+      IpRegion: ip.region,
+      Name: card.fullname,
+      Pan: card.pan,
+      PublicId: cashbox.public_id,
+      Token: card.tk,
+      TransactionId: transaction.id,
+    };
+    if (transaction.status == 'Completed') {
+      return CoreApiResponse.success(data);
+    } else if (transaction.reason_code == 5206) {
+      return CoreApiResponse.secure3d();
+    } else if (transaction.reason_code == 5051) {
+      return CoreApiResponse.insufficentFunds(data);
+    } else if (transaction.reason_code == 5015) {
+      return CoreApiResponse.issuerNotFound(data);
+    } else if (transaction.reason_code == 5005) {
+      return CoreApiResponse.doNotHonor(data);
+    } else if (transaction.reason_code == 5057) {
+      return CoreApiResponse.notPermitted();
+    }
   }
 }
