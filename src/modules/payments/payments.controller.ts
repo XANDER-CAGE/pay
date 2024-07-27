@@ -171,6 +171,8 @@ export class PaymentsController {
 
   @Post('find')
   async find(@Body() dto: FindDto, @Req() req: MyReq) {
+    console.log('PAYMENTS*****FIND', dto);
+
     return await this.paymentsService.find(dto.InvoiceId, req);
   }
 
