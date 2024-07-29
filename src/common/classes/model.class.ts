@@ -214,8 +214,7 @@ export class CoreApiResponse {
       AccountId: data.AccountId || null,
       Description: data.Description || null,
       CreatedDate: `/Date(${date.getTime()})/` || null,
-      CreatedDateIso:
-        date?.toISOString()?.replace('T', ' ')?.replace('Z', '') || null,
+      CreatedDateIso: date?.toISOString()?.replace('Z', '') || null,
       IpAddress: data.IpAddress || null,
       IpCountry: data.IpCountry || null,
       IpCity: data.IpCity || null,
