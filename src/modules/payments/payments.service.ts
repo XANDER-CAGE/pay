@@ -855,18 +855,20 @@ export class PaymentsService {
       Token: card.tk,
       TransactionId: transaction.id,
     };
+    let model: CoreApiResponse;
     if (transaction.status == 'Completed') {
-      return CoreApiResponse.success(data);
+      model = CoreApiResponse.success(data);
     } else if (transaction.reason_code == 5206) {
-      return CoreApiResponse.secure3d();
+      model = CoreApiResponse.secure3d();
     } else if (transaction.reason_code == 5051) {
-      return CoreApiResponse.insufficentFunds(data);
+      model = CoreApiResponse.insufficentFunds(data);
     } else if (transaction.reason_code == 5015) {
-      return CoreApiResponse.issuerNotFound(data);
+      model = CoreApiResponse.issuerNotFound(data);
     } else if (transaction.reason_code == 5005) {
-      return CoreApiResponse.doNotHonor(data);
+      model = CoreApiResponse.doNotHonor(data);
     } else if (transaction.reason_code == 5057) {
-      return CoreApiResponse.notPermitted();
+      model = CoreApiResponse.notPermitted();
     }
+    return model;
   }
 }
