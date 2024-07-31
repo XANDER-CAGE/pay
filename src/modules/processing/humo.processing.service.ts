@@ -550,7 +550,7 @@ export class HumoProcessingService {
     <soapenv:Header/>
     <soapenv:Body>
     <urn:CancelRequest>
-    <paymentRef>${transaction.processing_ref_num}</paymentRef>>
+    <paymentRef>${transaction.hold_id}</paymentRef>>
     <paymentOriginator>${this.humoSoapUsername}</paymentOriginator>
     </urn:CancelRequest>
     </soapenv:Body>
