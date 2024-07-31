@@ -427,7 +427,7 @@ export class HumoProcessingService {
         cashbox_id: cashbox.id,
         processing: 'humo',
         is_active: true,
-        is_recurrent: true,
+        OR: [{ is_recurrent: true }, { is_recurrent: false }],
       },
     });
     const { balance } = await this.getDataByPan(pan);
