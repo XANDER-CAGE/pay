@@ -42,6 +42,7 @@ interface ISuccess {
   Name: string;
   Token: string;
   GatewayName: string;
+  Status?: string;
 }
 
 interface IInsufficientFunds {
@@ -257,7 +258,7 @@ export class CoreApiResponse {
       Reason: 'Approved',
       ReasonCode: 0,
       Refunded: false,
-      Status: 'Completed',
+      Status: successData.Status || 'Completed',
       Success: true,
       Token: successData.Token,
       TransactionId: successData.TransactionId,
