@@ -550,12 +550,14 @@ export class HumoProcessingService {
     <soapenv:Header/>
     <soapenv:Body>
     <urn:CancelRequest>
-    <paymentRef>${transaction.hold_id}</paymentRef>>
+    <paymentRef>${transaction.processing_ref_num}</paymentRef>>
     <paymentOriginator>${this.humoSoapUsername}</paymentOriginator>
     </urn:CancelRequest>
     </soapenv:Body>
     </soapenv:Envelope>`;
     try {
+      console.log(xml);
+
       await axios.post(this.humoSoapUrl, xml, {
         headers: {
           'Content-Type': 'text/xml',
