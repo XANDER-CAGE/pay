@@ -872,9 +872,13 @@ export class PaymentsService {
       PublicId: cashbox.public_id,
       Token: card.tk,
       TransactionId: transaction.id,
+      Status: transaction.status,
     };
     let model: CoreApiResponse;
-    if (transaction.status == 'Completed') {
+    if (
+      transaction.status == 'Completed' ||
+      transaction.status == 'Authorized'
+    ) {
       model = CoreApiResponse.success(data);
     } else if (transaction.reason_code == 5206) {
       model = CoreApiResponse.secure3d();
