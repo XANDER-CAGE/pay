@@ -490,6 +490,8 @@ export class HumoProcessingService {
   }
 
   async confirmHold(data: IConfirmHold): Promise<IConfirmHoldResponse> {
+    console.log('CONFIRM HOLD DATA', data);
+
     const amountInTiyin = data.amount * 100;
     const xml = `<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-
       ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns:xsi="http://www.w3.org/2001/XMLSchema -
