@@ -309,6 +309,8 @@ export class PaymentsService {
     const order = await this.prisma.order.findFirst({
       where: { invoice_id: transaction.invoice_id },
     });
+    console.log('ORDER IN #DS', order);
+
     let model: CoreApiResponse;
     if (order && order.require_confirmation) {
       model = await this.processingService.hold({
