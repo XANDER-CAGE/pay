@@ -27,8 +27,6 @@ export class HookService {
         code: response.data.code,
       };
     } catch (error) {
-      console.log(error);
-
       return {
         success: false,
         code: NaN,
