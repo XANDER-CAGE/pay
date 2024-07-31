@@ -309,8 +309,6 @@ export class PaymentsService {
     const order = await this.prisma.order.findFirst({
       where: { invoice_id: transaction.invoice_id },
     });
-    console.log('ORDER IN #DS', order, cashbox, transaction);
-
     let model: CoreApiResponse;
     if (order && order.require_confirmation) {
       model = await this.processingService.hold({
@@ -341,8 +339,6 @@ export class PaymentsService {
       const payHook = await this.prisma.hook.findFirst({
         where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
       });
-      console.log('Payhook', payHook);
-
       if (payHook) {
         this.hookService.hook(payHook.url, 'Payment', updatedPayment, card);
       }
@@ -875,11 +871,10 @@ export class PaymentsService {
       Status: transaction.status,
     };
     let model: CoreApiResponse;
-    if (
-      transaction.status == 'Completed' ||
-      transaction.status == 'Authorized'
-    ) {
+    if (transaction.status == 'Completed') {
       model = CoreApiResponse.success(data);
+    } else if (transaction.status == 'Authorized') {
+      model = CoreApiResponse.hold(data);
     } else if (transaction.reason_code == 5206) {
       model = CoreApiResponse.secure3d();
     } else if (transaction.reason_code == 5051) {
