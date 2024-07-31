@@ -258,7 +258,7 @@ export class CoreApiResponse {
       Reason: 'Approved',
       ReasonCode: 0,
       Refunded: false,
-      Status: successData.Status || 'Completed',
+      Status: 'Completed',
       Success: true,
       Token: successData.Token,
       TransactionId: successData.TransactionId,
