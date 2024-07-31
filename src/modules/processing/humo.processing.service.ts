@@ -556,8 +556,6 @@ export class HumoProcessingService {
     </soapenv:Body>
     </soapenv:Envelope>`;
     try {
-      console.log(xml);
-
       await axios.post(this.humoSoapUrl, xml, {
         headers: {
           'Content-Type': 'text/xml',
@@ -568,8 +566,6 @@ export class HumoProcessingService {
         },
       });
     } catch (error) {
-      console.log(error);
-
       return {
         Success: false,
         Message: 'Cannot cancel: Something went wrong',

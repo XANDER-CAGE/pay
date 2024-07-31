@@ -173,8 +173,6 @@ export class PaymentsController {
   @HttpCode(200)
   @Post('find')
   async find(@Body() dto: FindDto, @Req() req: MyReq) {
-    console.log('PAYMENTS*****FIND', dto);
-
     return await this.paymentsService.find(dto.InvoiceId, req);
   }
 

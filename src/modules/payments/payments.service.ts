@@ -835,8 +835,6 @@ export class PaymentsService {
   }
 
   async find(invoiceId: string, req: MyReq) {
-    console.log('FIND DTO', invoiceId);
-
     const transaction = await this.prisma.transaction.findFirst({
       where: {
         cashbox_id: req.cashboxId,
@@ -884,8 +882,6 @@ export class PaymentsService {
     } else if (transaction.reason_code == 5057) {
       model = CoreApiResponse.notPermitted();
     }
-    console.log('FIND MODEL', model);
-
     return model;
   }
 }
