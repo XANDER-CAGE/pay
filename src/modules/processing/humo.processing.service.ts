@@ -482,6 +482,7 @@ export class HumoProcessingService {
         status: 'Authorized',
         processing_ref_num: String(paymentRefFromHumo),
         hold_id: paymentIdFromHumo,
+        hold_amount: transaction.amount,
         last_amount: +balance / 100,
         updated_at: new Date(),
       },
@@ -532,9 +533,9 @@ export class HumoProcessingService {
     await this.prisma.transaction.update({
       where: {
         id: data.transaction.id,
-        amount: data.amount,
       },
       data: {
+        amount: data.amount,
         status: 'Completed',
         updated_at: new Date(),
       },
