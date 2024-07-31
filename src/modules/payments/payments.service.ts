@@ -306,22 +306,36 @@ export class PaymentsService {
       this.cancelCardChargeTimeout(transaction.id);
       return model;
     }
-    const resFrom3ds = await this.processingService.handle3dsPost({
-      cashbox,
-      company,
-      pan: decryptedData.pan,
-      transaction,
-      expiry: decryptedData.expiry,
-      ip,
-      card,
+    const order = await this.prisma.order.findFirst({
+      where: { invoice_id: transaction.invoice_id },
     });
+    let model: CoreApiResponse;
+    if (order && order.require_confirmation) {
+      model = await this.processingService.hold({
+        card,
+        cashbox,
+        expiry: decryptedData.expiry,
+        ip,
+        pan: decryptedData.pan,
+        transaction,
+      });
+    } else {
+      model = await this.processingService.handle3dsPost({
+        cashbox,
+        company,
+        pan: decryptedData.pan,
+        transaction,
+        expiry: decryptedData.expiry,
+        ip,
+        card,
+      });
+    }
     this.cancelCardChargeTimeout(transaction.id);
     const updatedPayment = await this.prisma.transaction.findFirst({
       where: { id: transaction.id },
     });
-    console.log('Res from 3ds', resFrom3ds);
 
-    if (resFrom3ds.Success) {
+    if (model.Success) {
       const payHook = await this.prisma.hook.findFirst({
         where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
       });
@@ -338,7 +352,7 @@ export class PaymentsService {
         this.hookService.hook(failHook.url, 'Payment', updatedPayment, card);
       }
     }
-    return resFrom3ds;
+    return model;
   }
 
   async hold(dto: IHold) {
@@ -346,6 +360,12 @@ export class PaymentsService {
       where: { tk: dto.token, organization_id: dto.organizationId },
     });
     let model: CoreApiResponse;
+    const paymentWithInvoiceExists = await this.prisma.transaction.findFirst({
+      where: {
+        invoice_id: dto.invoiceId,
+        cashbox_id: dto.cashboxId,
+      },
+    });
     if (!card) {
       model = CoreApiResponse.issuerNotFound({
         Amount: +dto.amount,
@@ -370,12 +390,6 @@ export class PaymentsService {
       });
       return model;
     }
-    const paymentWithInvoiceExists = await this.prisma.transaction.findFirst({
-      where: {
-        invoice_id: dto.invoiceId,
-        cashbox_id: dto.cashboxId,
-      },
-    });
     if (paymentWithInvoiceExists) {
       throw new ConflictException('Transaction with Invoice already exists');
     }
