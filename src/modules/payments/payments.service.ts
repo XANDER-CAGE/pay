@@ -338,14 +338,26 @@ export class PaymentsService {
         where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
       });
       if (payHook) {
-        this.hookService.hook(payHook.url, 'Payment', updatedPayment, card);
+        this.hookService.hook(
+          payHook.url,
+          'Payment',
+          updatedPayment,
+          card,
+          order.json_data,
+        );
       }
     } else {
       const failHook = await this.prisma.hook.findFirst({
         where: { cashbox_id: cashbox.id, is_active: true, type: 'fail' },
       });
       if (failHook) {
-        this.hookService.hook(failHook.url, 'Payment', updatedPayment, card);
+        this.hookService.hook(
+          failHook.url,
+          'Payment',
+          updatedPayment,
+          card,
+          order.json_data,
+        );
       }
     }
     return model;
@@ -494,6 +506,9 @@ export class PaymentsService {
         card,
       );
     }
+    const order = await this.prisma.order.findFirst({
+      where: { invoice_id: transaction.invoice_id },
+    });
     const processingRes = await this.processingService.confirmHold({
       transaction,
       card,
@@ -507,7 +522,13 @@ export class PaymentsService {
       const updatedPayment = await this.prisma.transaction.findFirst({
         where: { id: transaction.id },
       });
-      this.hookService.hook(confirmHook.url, 'Payment', updatedPayment, card);
+      this.hookService.hook(
+        confirmHook.url,
+        'Payment',
+        updatedPayment,
+        card,
+        order?.json_data,
+      );
     }
     if (processingRes.Success) {
       this.cancelHoldTimeout(transaction.id);
@@ -529,6 +550,9 @@ export class PaymentsService {
     if (!transaction) {
       throw new NotFoundException('Payment not found');
     }
+    const order = await this.prisma.order.findFirst({
+      where: { invoice_id: transaction.invoice_id },
+    });
     const card = transaction.card;
     if (card.processing_card_token == 'test') {
       this.cancelHoldTimeout(transaction.id);
@@ -540,6 +564,21 @@ export class PaymentsService {
     });
     if (processingRes.Success) {
       this.cancelHoldTimeout(transaction.id);
+      const cancelHook = await this.prisma.hook.findFirst({
+        where: { cashbox_id: cashboxId, type: 'cancel' },
+      });
+      if (cancelHook) {
+        const updatedPayment = await this.prisma.transaction.findFirst({
+          where: { id: transaction.id },
+        });
+        this.hookService.hook(
+          cancelHook.url,
+          'Payment',
+          updatedPayment,
+          card,
+          order?.json_data,
+        );
+      }
     }
     return processingRes;
   }
@@ -568,6 +607,9 @@ export class PaymentsService {
     } else {
       await this.processingService.refund({ transaction, card });
     }
+    const order = await this.prisma.order.findFirst({
+      where: { invoice_id: transaction.invoice_id },
+    });
     const refundHook = await this.prisma.hook.findFirst({
       where: { cashbox_id: cashbox.id, is_active: true, type: 'refund' },
     });
@@ -575,7 +617,13 @@ export class PaymentsService {
       const updatedPayment = await this.prisma.transaction.findFirst({
         where: { id: transaction.id },
       });
-      this.hookService.hook(refundHook.url, 'Refund', updatedPayment, card);
+      this.hookService.hook(
+        refundHook.url,
+        'Refund',
+        updatedPayment,
+        card,
+        order?.json_data,
+      );
     }
     return {
       Model: {

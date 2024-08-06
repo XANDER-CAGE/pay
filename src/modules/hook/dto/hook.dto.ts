@@ -31,11 +31,13 @@ export class HookDto {
   OperationType: string;
   InvoiceId: string;
   AccountId: string;
+  Data?: string;
 
   constructor(
     transaction: transaction,
     card: card,
     operationType: OperationType,
+    jsonData?: any,
   ) {
     const cardExp =
       card.expiry.substring(2) + '/' + card.expiry.substring(0, 2);
@@ -55,5 +57,6 @@ export class HookDto {
     this.PaymentCurrency = '860';
     this.Status = transaction.status;
     this.TestMode = transaction.is_test;
+    this.Data = jsonData || null;
   }
 }
