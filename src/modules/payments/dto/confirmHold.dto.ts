@@ -9,6 +9,6 @@ export class ConfirmHoldDto {
 
   @ApiProperty()
   @IsNumber()
-  @Min(1000)
+  @Min(1)
   Amount: number;
 }
