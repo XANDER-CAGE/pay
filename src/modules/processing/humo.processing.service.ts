@@ -178,7 +178,7 @@ export class HumoProcessingService {
     if (!epos) {
       throw new NotFoundException('EPOS not found');
     }
-    const { balance, phone } = await this.getDataByPan(pan);
+    const { balance } = await this.getDataByPan(pan);
     const { success, errorCode, paymentIdFromHumo, paymentRefFromHumo } =
       await this.authAmount({ epos, expiry, pan, transaction });
     const data = {
@@ -259,14 +259,14 @@ export class HumoProcessingService {
         updated_at: new Date(),
       },
     });
-    this.notificationService.sendSuccessSms({
-      amount: Number(obj.transaction.amount),
-      balance,
-      cashboxName: obj.cashbox.name,
-      pan: obj.pan,
-      phone,
-      processing: 'humo',
-    });
+    // this.notificationService.sendSuccessSms({
+    //   amount: Number(obj.transaction.amount),
+    //   balance,
+    //   cashboxName: obj.cashbox.name,
+    //   pan: obj.pan,
+    //   phone,
+    //   processing: 'humo',
+    // });
     return CoreApiResponse.success(data);
   }
 
@@ -638,7 +638,7 @@ export class HumoProcessingService {
 
   async payByToken(dto: IPayByToken): Promise<CoreApiResponse> {
     const { pan, cashbox, transaction, expiry, ip, card } = dto;
-    const { balance, phone } = await this.getDataByPan(pan);
+    const { balance } = await this.getDataByPan(pan);
     const epos = await this.prisma.epos.findFirst({
       where: {
         cashbox_id: cashbox.id,
@@ -725,14 +725,14 @@ export class HumoProcessingService {
         updated_at: new Date(),
       },
     });
-    this.notificationService.sendSuccessSms({
-      amount: Number(transaction.amount),
-      balance,
-      pan,
-      phone,
-      cashboxName: cashbox.name,
-      processing: 'humo',
-    });
+    // this.notificationService.sendSuccessSms({
+    //   amount: Number(transaction.amount),
+    //   balance,
+    //   pan,
+    //   phone,
+    //   cashboxName: cashbox.name,
+    //   processing: 'humo',
+    // });
     return CoreApiResponse.success(data);
   }
 

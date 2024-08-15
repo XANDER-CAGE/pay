@@ -224,14 +224,14 @@ export class PaymentsTESTService {
     if (payHook) {
       this.hookService.hook(payHook.url, 'Payment', updatedPayment, card);
     }
-    this.notificationService.sendSuccessSms({
-      amount: Number(transaction.amount),
-      balance: '1000000',
-      cashboxName: cashbox.name,
-      pan: card.pan,
-      phone: card.phone,
-      processing: card.processing,
-    });
+    // this.notificationService.sendSuccessSms({
+    //   amount: Number(transaction.amount),
+    //   balance: '1000000',
+    //   cashboxName: cashbox.name,
+    //   pan: card.pan,
+    //   phone: card.phone,
+    //   processing: card.processing,
+    // });
     return CoreApiResponse.success(data);
   }
 }

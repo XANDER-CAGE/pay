@@ -1,19 +1,6 @@
 import { card, transaction } from '@prisma/client';
 
 export type OperationType = 'Payment' | 'Refund' | 'CardPayout';
-function formatDate(date) {
-  function padTo2Digits(num) {
-    return num.toString().padStart(2, '0');
-  }
-  const year = date.getFullYear();
-  const month = padTo2Digits(date.getMonth() + 1);
-  const day = padTo2Digits(date.getDate());
-  const hours = padTo2Digits(date.getHours());
-  const minutes = padTo2Digits(date.getMinutes());
-  const seconds = padTo2Digits(date.getSeconds());
-
-  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
 export class HookDto {
   TransactionId: number;
   Amount: number;
@@ -32,6 +19,7 @@ export class HookDto {
   InvoiceId: string;
   AccountId: string;
   Data?: string;
+  Token: string;
 
   constructor(
     transaction: transaction,
@@ -50,7 +38,13 @@ export class HookDto {
     this.CardType = card.processing;
     this.CardExpDate = cardExp;
     this.Currency = 'UZS';
-    this.DateTime = formatDate(transaction.created_at);
+    this.DateTime = transaction.created_at
+      .toISOString()
+      .replace('T', ' ')
+      .replace('Z', '')
+      .split('.')
+      .slice(0, -1)
+      .join('');
     this.InvoiceId = transaction.invoice_id;
     this.OperationType = operationType;
     this.PaymentAmount = String(transaction.amount);
@@ -58,5 +52,6 @@ export class HookDto {
     this.Status = transaction.status;
     this.TestMode = transaction.is_test;
     this.Data = jsonData || null;
+    this.Token = card.tk;
   }
 }

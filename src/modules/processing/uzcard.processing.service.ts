@@ -159,7 +159,7 @@ export class UzcardProcessingService {
     if (!epos) {
       throw new NotFoundException('EPOS not found');
     }
-    const { balance, phone } = await this.getDataByProcessingCardToken(
+    const { balance } = await this.getDataByProcessingCardToken(
       card.processing_card_token,
     );
     const amountInTiyin = +obj.transaction.amount * 100;
@@ -251,14 +251,14 @@ export class UzcardProcessingService {
         updated_at: new Date(),
       },
     });
-    this.notificationService.sendSuccessSms({
-      amount: Number(obj.transaction.amount),
-      balance,
-      cashboxName: obj.cashbox.name,
-      pan: obj.pan,
-      phone,
-      processing: 'uzcard',
-    });
+    // this.notificationService.sendSuccessSms({
+    //   amount: Number(obj.transaction.amount),
+    //   balance,
+    //   cashboxName: obj.cashbox.name,
+    //   pan: obj.pan,
+    //   phone,
+    //   processing: 'uzcard',
+    // });
     return CoreApiResponse.success(data);
   }
 
@@ -491,7 +491,7 @@ export class UzcardProcessingService {
 
   async payByToken(dto: IPayByToken): Promise<CoreApiResponse> {
     const { card, transaction, company, expiry, ip, cashbox } = dto;
-    const { balance, phone } = await this.getDataByProcessingCardToken(
+    const { balance } = await this.getDataByProcessingCardToken(
       card.processing_card_token,
     );
     const epos = await this.prisma.epos.findFirst({
@@ -586,14 +586,14 @@ export class UzcardProcessingService {
         last_amount: +balance / 100,
       },
     });
-    this.notificationService.sendSuccessSms({
-      amount: Number(transaction.amount),
-      balance,
-      cashboxName: cashbox.name,
-      pan: card.pan,
-      phone,
-      processing: 'uzcard',
-    });
+    // this.notificationService.sendSuccessSms({
+    //   amount: Number(transaction.amount),
+    //   balance,
+    //   cashboxName: cashbox.name,
+    //   pan: card.pan,
+    //   phone,
+    //   processing: 'uzcard',
+    // });
     return CoreApiResponse.success(data);
   }
 
