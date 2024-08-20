@@ -26,4 +26,8 @@ export class HoldDto {
   @ApiProperty()
   @IsNotEmpty()
   Token: string;
+
+  @ApiProperty()
+  @IsOptional()
+  JsonData: object;
 }

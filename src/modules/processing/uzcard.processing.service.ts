@@ -340,6 +340,7 @@ export class UzcardProcessingService {
       PublicId: dto.cashbox.public_id,
       Token: dto.card.tk,
       TransactionId: dto.transaction.id,
+      JsonData: dto.transaction.json_data,
     };
     if (holdId && status == 0) {
       await this.prisma.transaction.update({

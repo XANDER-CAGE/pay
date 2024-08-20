@@ -48,6 +48,7 @@ interface IHold {
   cashboxId: number;
   token: string;
   organizationId: number;
+  jsonData?: object;
 }
 
 interface IPayByToken {
@@ -59,6 +60,7 @@ interface IPayByToken {
   cashboxId: number;
   token: string;
   organizationId: number;
+  json_data?: object;
 }
 
 interface IP2P {
@@ -394,6 +396,7 @@ export class PaymentsService {
           description: dto.description,
           fail_reason: model.Model.Reason,
           reason_code: model.Model.ReasonCode,
+          json_data: dto.jsonData,
         },
       });
       return model;
@@ -447,6 +450,7 @@ export class PaymentsService {
         description: dto.description,
         hold_id: '0',
         ip_id: ip.id,
+        json_data: dto.jsonData,
       },
     });
     if (card.processing_card_token == 'test') {
@@ -671,6 +675,7 @@ export class PaymentsService {
           description: dto.description,
           fail_reason: model.Model.Reason,
           reason_code: model.Model.ReasonCode,
+          json_data: dto.json_data,
         },
       });
       return model;
@@ -714,6 +719,7 @@ export class PaymentsService {
         cashbox_id: dto.cashboxId,
         ip_id: ip.id,
         status: 'Pending',
+        json_data: dto.json_data,
       },
     });
     const checkHook = await this.prisma.hook.findFirst({
@@ -751,7 +757,7 @@ export class PaymentsService {
     const { decryptedData } = this.decryptService.decryptCardCryptogram(
       card.cryptogram,
     );
-    model = await this.processingService.payByCard({
+    model = await this.processingService.payByToken({
       card,
       cashbox,
       ip,

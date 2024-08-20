@@ -451,6 +451,7 @@ export class HumoProcessingService {
       PublicId: cashbox.public_id,
       Token: card.tk,
       TransactionId: transaction.id,
+      JsonData: transaction.json_data,
     };
     let model: CoreApiResponse;
     if (!success) {

@@ -22,6 +22,7 @@ interface IData {
   Token?: string;
   GatewayName?: string;
   Success?: boolean;
+  JsonData?: any;
 }
 
 interface ISuccess {
@@ -43,6 +44,7 @@ interface ISuccess {
   Token: string;
   GatewayName: string;
   Status?: string;
+  JsonData?: any;
 }
 
 interface IInsufficientFunds {
@@ -172,7 +174,7 @@ export class CoreApiResponse {
       CurrencyCode: 860,
       PaymentCurrencyCode: 0,
       Email: null,
-      JsonData: null,
+      JsonData: data.JsonData,
       PayoutDate: null,
       PayoutDateIso: null,
       PayoutAmount: null,
@@ -360,6 +362,7 @@ export class CoreApiResponse {
       Success: true,
       Token: data.Token,
       TransactionId: data.TransactionId,
+      JsonData: data.JsonData,
     });
   }
 

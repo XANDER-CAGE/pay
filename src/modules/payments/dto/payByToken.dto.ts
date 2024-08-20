@@ -26,4 +26,8 @@ export class PayByTokenDto {
   @ApiProperty()
   @IsNotEmpty()
   Token: string;
+
+  @ApiProperty()
+  @IsOptional()
+  JsonData: object;
 }

@@ -177,7 +177,7 @@ export class ProcessingService {
     }
   }
 
-  async payByCard(dto: IPayByToken): Promise<CoreApiResponse> {
+  async payByToken(dto: IPayByToken): Promise<CoreApiResponse> {
     const { pan, card } = dto;
     const { processing, bankName } = await this.determine(pan);
     let data: CoreApiResponse;

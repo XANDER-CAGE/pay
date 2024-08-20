@@ -71,7 +71,7 @@ export class PaymentsController {
   }
 
   @UseGuards(AuthGuard)
-  @Post('cards/auth')
+  @Post('tokens/auth')
   async hold(@Body() dto: HoldDto, @Req() req: MyReq) {
     return await this.paymentsService.hold({
       ip: req['x-real-ip'],
@@ -82,6 +82,7 @@ export class PaymentsController {
       cashboxId: req.cashboxId,
       token: dto.Token,
       organizationId: req.organizationId,
+      jsonData: dto.JsonData,
     });
   }
 
@@ -145,6 +146,7 @@ export class PaymentsController {
       token: dto.Token,
       ip: req['x-real-ip'],
       organizationId: req.organizationId,
+      json_data: dto.JsonData,
     });
     if (requestId) {
       await this.cacheManager.set(requestId, JSON.stringify(result));

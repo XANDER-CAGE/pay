@@ -212,6 +212,7 @@ model transaction {
   account_id         String?          @db.VarChar
   is_test            Boolean?         @default(false)
   ip_id              Int?
+  json_data          Json?
   created_at         DateTime?        @default(now()) @db.Timestamp(6)
   updated_at         DateTime?        @default(now()) @db.Timestamp(6)
   card               card?            @relation(fields: [card_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
