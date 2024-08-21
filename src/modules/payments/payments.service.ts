@@ -464,7 +464,8 @@ export class PaymentsService {
         this.addHoldTimeout(transaction.id, transaction.cashbox_id);
       }
     }
-    const processingRes = await this.processingService.hold({
+
+    model = await this.processingService.hold({
       cashbox,
       pan,
       expiry,
@@ -472,10 +473,38 @@ export class PaymentsService {
       card,
       ip,
     });
-    if (processingRes.Success) {
+    const updatedPayment = await this.prisma.transaction.findFirst({
+      where: { id: transaction.id },
+    });
+    if (model.Success) {
       this.addHoldTimeout(transaction.id, transaction.cashbox_id);
+      const payHook = await this.prisma.hook.findFirst({
+        where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
+      });
+      if (payHook) {
+        this.hookService.hook(
+          payHook.url,
+          'Payment',
+          updatedPayment,
+          card,
+          updatedPayment.json_data,
+        );
+      }
+    } else {
+      const failHook = await this.prisma.hook.findFirst({
+        where: { cashbox_id: cashbox.id, is_active: true, type: 'fail' },
+      });
+      if (failHook) {
+        this.hookService.hook(
+          failHook.url,
+          'Payment',
+          updatedPayment,
+          card,
+          updatedPayment.json_data,
+        );
+      }
     }
-    return processingRes;
+    return model;
   }
 
   async confirmHold(
@@ -510,9 +539,6 @@ export class PaymentsService {
         card,
       );
     }
-    const order = await this.prisma.order.findFirst({
-      where: { invoice_id: transaction.invoice_id },
-    });
     const processingRes = await this.processingService.confirmHold({
       transaction,
       card,
@@ -531,7 +557,7 @@ export class PaymentsService {
         'Payment',
         updatedPayment,
         card,
-        order?.json_data,
+        updatedPayment.json_data,
       );
     }
     if (processingRes.Success) {

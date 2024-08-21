@@ -71,6 +71,7 @@ export class PaymentsController {
   }
 
   @UseGuards(AuthGuard)
+  @HttpCode(200)
   @Post('tokens/auth')
   async hold(@Body() dto: HoldDto, @Req() req: MyReq) {
     return await this.paymentsService.hold({
