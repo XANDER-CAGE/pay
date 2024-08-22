@@ -42,9 +42,7 @@ export class HookDto {
       .toISOString()
       .replace('T', ' ')
       .replace('Z', '')
-      .split('.')
-      .slice(0, -1)
-      .join('');
+      .split('.')[0];
     this.InvoiceId = transaction.invoice_id;
     this.OperationType = operationType;
     this.PaymentAmount = String(transaction.amount);

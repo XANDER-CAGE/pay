@@ -337,32 +337,31 @@ export class CoreApiResponse {
     });
   }
 
-  static hold(data: ISuccess) {
+  static hold(successData: ISuccess) {
     return new CoreApiResponse({
-      AccountId: data.AccountId,
-      Amount: data.Amount,
-      CardExpDate: data.CardExpDate,
+      AccountId: successData.AccountId,
+      Amount: successData.Amount,
+      CardExpDate: successData.CardExpDate,
       CardHolderMessage: 'Холдирование успешно авторизован',
-      CardType: data.CardType,
-      Date: data.Date,
-      Description: data.Description,
-      GatewayName: data.GatewayName,
-      InvoiceId: data.InvoiceId,
-      IpAddress: data.IpAddress,
-      IpCity: data.IpCity,
-      IpCountry: data.IpCountry,
-      IpRegion: data.IpRegion,
-      Name: data.Name,
-      Pan: data.Pan,
-      PublicId: data.PublicId,
+      CardType: successData.CardType,
+      Date: successData.Date.toISOString().replace('T', ' ').replace('Z', ''),
+      Description: successData.Description,
+      GatewayName: successData.GatewayName,
+      InvoiceId: successData.InvoiceId,
+      IpAddress: successData.IpAddress,
+      IpCity: successData.IpCity,
+      IpCountry: successData.IpCountry,
+      IpRegion: successData.IpRegion,
+      Name: successData.Name,
+      Pan: successData.Pan,
+      PublicId: successData.PublicId,
       Reason: 'Approved',
       ReasonCode: 0,
       Refunded: false,
       Status: 'Authorized',
       Success: true,
-      Token: data.Token,
-      TransactionId: data.TransactionId,
-      JsonData: data.JsonData,
+      Token: successData.Token,
+      TransactionId: successData.TransactionId,
     });
   }
 

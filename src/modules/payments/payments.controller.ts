@@ -88,12 +88,14 @@ export class PaymentsController {
   }
 
   @UseGuards(AuthGuard)
+  @HttpCode(200)
   @Post('confirm')
   async confirmHold(@Body() dto: ConfirmHoldDto, @Req() req: MyReq) {
     return await this.paymentsService.confirmHold(dto, req.cashboxId);
   }
 
   @UseGuards(AuthGuard)
+  @HttpCode(200)
   @Post('void')
   async cancelHold(
     @Body('TransactionId') transactionId: number,

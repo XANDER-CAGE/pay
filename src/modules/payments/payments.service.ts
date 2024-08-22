@@ -580,9 +580,6 @@ export class PaymentsService {
     if (!transaction) {
       throw new NotFoundException('Payment not found');
     }
-    const order = await this.prisma.order.findFirst({
-      where: { invoice_id: transaction.invoice_id },
-    });
     const card = transaction.card;
     if (card.processing_card_token == 'test') {
       this.cancelHoldTimeout(transaction.id);
@@ -606,7 +603,7 @@ export class PaymentsService {
           'Payment',
           updatedPayment,
           card,
-          order?.json_data,
+          updatedPayment.json_data,
         );
       }
     }

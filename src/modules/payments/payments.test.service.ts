@@ -222,7 +222,13 @@ export class PaymentsTESTService {
       where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
     });
     if (payHook) {
-      this.hookService.hook(payHook.url, 'Payment', updatedPayment, card);
+      this.hookService.hook(
+        payHook.url,
+        'Payment',
+        updatedPayment,
+        card,
+        updatedPayment.json_data,
+      );
     }
     // this.notificationService.sendSuccessSms({
     //   amount: Number(transaction.amount),
