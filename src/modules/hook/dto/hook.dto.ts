@@ -1,4 +1,5 @@
 import { card, transaction } from '@prisma/client';
+import { reasonCodes } from 'src/common/var/reascon-code.object.var';
 
 export type OperationType = 'Payment' | 'Refund' | 'CardPayout';
 export class HookDto {
@@ -20,6 +21,8 @@ export class HookDto {
   AccountId: string;
   Data?: string;
   Token: string;
+  ReasonCode: number;
+  Reason: string;
 
   constructor(
     transaction: transaction,
@@ -51,5 +54,7 @@ export class HookDto {
     this.TestMode = transaction.is_test;
     this.Data = jsonData || null;
     this.Token = card.tk;
+    this.ReasonCode = transaction.reason_code || null;
+    this.Reason = reasonCodes[transaction.reason_code] || null;
   }
 }
