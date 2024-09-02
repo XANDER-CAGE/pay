@@ -20,7 +20,11 @@ export class HookService {
     const dto = new HookDto(transaction, card, operationType, jsonData);
     try {
       console.log('HOOK DTO', dto);
-      const response = await axios.post(webhookUrl, dto);
+      const response = await axios.post(webhookUrl, dto, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      });
       console.log('RESPONSE FROM HOOK', response.data);
       return {
         success: true,
