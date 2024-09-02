@@ -483,6 +483,7 @@ export class HumoProcessingService {
         status: 'Authorized',
         processing_ref_num: String(paymentRefFromHumo),
         hold_id: paymentIdFromHumo,
+        reason_code: 0,
         hold_amount: transaction.amount,
         last_amount: +balance / 100,
         updated_at: new Date(),

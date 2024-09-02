@@ -351,6 +351,7 @@ export class UzcardProcessingService {
           status: 'Authorized',
           processing_ref_num: String(holdId),
           hold_id: String(holdId),
+          reason_code: 0,
           last_amount: +balance / 100,
           hold_amount: dto.transaction.amount,
           updated_at: new Date(),
