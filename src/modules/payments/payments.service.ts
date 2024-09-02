@@ -376,6 +376,11 @@ export class PaymentsService {
         cashbox_id: dto.cashboxId,
       },
     });
+    if (paymentWithInvoiceExists) {
+      throw new ConflictException(
+        'Transaction with such invoice already exists',
+      );
+    }
     if (!card) {
       model = CoreApiResponse.issuerNotFound({
         Amount: +dto.amount,
