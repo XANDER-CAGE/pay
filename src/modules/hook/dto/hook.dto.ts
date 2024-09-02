@@ -54,7 +54,8 @@ export class HookDto {
     this.TestMode = transaction.is_test;
     this.Data = jsonData || null;
     this.Token = card.tk;
-    this.ReasonCode = transaction.reason_code || null;
+    this.ReasonCode =
+      transaction.reason_code == 0 ? 0 : transaction.reason_code || null;
     this.Reason = reasonCodes[transaction.reason_code] || null;
   }
 }

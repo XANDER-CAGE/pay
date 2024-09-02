@@ -487,7 +487,7 @@ export class PaymentsService {
         where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
       });
       if (payHook) {
-        this.hookService.hook(
+        await this.hookService.hook(
           payHook.url,
           'Payment',
           updatedPayment,
@@ -500,7 +500,7 @@ export class PaymentsService {
         where: { cashbox_id: cashbox.id, is_active: true, type: 'fail' },
       });
       if (failHook) {
-        this.hookService.hook(
+        await this.hookService.hook(
           failHook.url,
           'Payment',
           updatedPayment,
