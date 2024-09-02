@@ -21,7 +21,7 @@ export class HookService {
     try {
       console.log('HOOK DTO', dto);
       const response = await axios.post(webhookUrl, dto);
-      console.log('RESPONSE FROM HOOK', response);
+      console.log('RESPONSE FROM HOOK', response.data);
       return {
         success: true,
         code: response.data.code,
