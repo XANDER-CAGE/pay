@@ -642,9 +642,6 @@ export class PaymentsService {
     } else {
       await this.processingService.refund({ transaction, card });
     }
-    const order = await this.prisma.order.findFirst({
-      where: { invoice_id: transaction.invoice_id },
-    });
     const refundHook = await this.prisma.hook.findFirst({
       where: { cashbox_id: cashbox.id, is_active: true, type: 'refund' },
     });
@@ -657,7 +654,7 @@ export class PaymentsService {
         'Refund',
         updatedPayment,
         card,
-        order?.json_data,
+        updatedPayment.json_data,
       );
     }
     return {
