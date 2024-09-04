@@ -49,6 +49,7 @@ export class PaymentsController {
       invoiceId: dto.InvoiceId,
       description: dto.Description,
       accountId: dto.AccountId,
+      jsonData: dto.JsonData,
     });
     if (requestId) {
       await this.cacheManager.set(requestId, JSON.stringify(result));

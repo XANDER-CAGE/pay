@@ -35,7 +35,8 @@ async function bootstrap() {
   app.setBaseViewsDir(join(__dirname, '..', 'views'));
   app.setViewEngine('ejs');
   const now = new Date();
-  await app.listen(port, () => console.log(`Running on port ${port} 🏃 at ${now.toISOString()}`));
-
+  await app.listen(port, () =>
+    console.log(`Running on port ${port} 🏃 at ${now.toISOString()}`),
+  );
 }
 bootstrap();

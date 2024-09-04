@@ -37,6 +37,7 @@ interface ICardsChargeData {
   invoiceId: string;
   description: string;
   accountId: string;
+  jsonData: object;
 }
 
 interface IHold {
@@ -141,6 +142,7 @@ export class PaymentsService {
           type: 'threeds',
           account_id: data.accountId,
           fail_reason: 'Invalid cryptogram packet',
+          json_data: data.jsonData,
         },
       });
       console.error({
@@ -198,6 +200,7 @@ export class PaymentsService {
         cashbox_id: cashbox.id,
         account_id: data.accountId,
         status: 'AwaitingAuthentication',
+        json_data: order ? order.json_data : data.jsonData || null,
       },
     });
     this.cardChargeTimedOut(payment.id);
