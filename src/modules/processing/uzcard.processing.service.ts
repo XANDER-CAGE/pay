@@ -320,13 +320,9 @@ export class UzcardProcessingService {
         password: this.uzCardPassword,
       },
     });
-    console.log('RES FROM UZCARD HOLD', response.data);
-
     const holdId = response?.data?.result?.id;
     const status = response?.data?.result?.status;
     let model: CoreApiResponse;
-    const errorCode = response.data?.result?.resp;
-
     const data = {
       AccountId: dto.transaction.account_id,
       Amount: Number(dto.transaction.amount),
@@ -364,7 +360,7 @@ export class UzcardProcessingService {
       });
       return CoreApiResponse.hold(data);
     }
-    if (errorCode == 51) {
+    if (status == -240) {
       model = CoreApiResponse.insufficentFunds(data);
     } else {
       model = CoreApiResponse.doNotHonor(data);
