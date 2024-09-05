@@ -320,8 +320,13 @@ export class UzcardProcessingService {
         password: this.uzCardPassword,
       },
     });
+    console.log('RES FROM UZCARD HOLD', response.data);
+
     const holdId = response?.data?.result?.id;
     const status = response?.data?.result?.status;
+    let model: CoreApiResponse;
+    const errorCode = response.data?.result?.resp;
+
     const data = {
       AccountId: dto.transaction.account_id,
       Amount: Number(dto.transaction.amount),
@@ -359,6 +364,11 @@ export class UzcardProcessingService {
       });
       return CoreApiResponse.hold(data);
     }
+    if (errorCode == 51) {
+      model = CoreApiResponse.insufficentFunds(data);
+    } else {
+      model = CoreApiResponse.doNotHonor(data);
+    }
     await this.prisma.transaction.update({
       where: {
         id: dto.transaction.id,
@@ -367,10 +377,12 @@ export class UzcardProcessingService {
         status: 'Declined',
         processing_ref_num: String(0),
         last_amount: +balance / 100,
+        fail_reason: model.Model.Reason,
+        reason_code: model.Model.ReasonCode,
         updated_at: new Date(),
       },
     });
-    return CoreApiResponse.doNotHonor(data);
+    return model;
   }
 
   async confirmHold(dto: IConfirmHold): Promise<IConfirmHoldResponse> {
