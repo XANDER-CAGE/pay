@@ -1,10 +1,22 @@
-<form name="downloadForm" action="<%= TermUrl %>" method="POST">
-  <input type="hidden" name="PaRes" value="<%= PaRes %>" />
-  <input type="hidden" name="MD" value="<%= md %>" />
-</form>
 <script>
-  window.onload = submitForm;
-  function submitForm() {
-    downloadForm.submit();
+  window.onload = submitData;
+
+  function submitData() {
+    const url = "<%= TermUrl %>";
+    const data = {
+      PaRes: "<%= PaRes %>",
+      MD: "<%= md %>"
+    };
+
+    fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => console.log(data))
+    .catch(error => console.error('Error:', error));
   }
 </script>
