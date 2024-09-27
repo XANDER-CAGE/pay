@@ -71,6 +71,16 @@ interface IP2P {
   cashboxId: number;
 }
 
+interface ICardsHold {
+  ip: string;
+  cardCryptoGramPacket: string;
+  amount: number;
+  invoiceId: string;
+  description: string;
+  accountId: string;
+  jsonData: object;
+}
+
 @Injectable()
 export class PaymentsService {
   private readonly cryptoPayTimeout: number;
@@ -313,7 +323,7 @@ export class PaymentsService {
       where: { invoice_id: transaction.invoice_id },
     });
     let model: CoreApiResponse;
-    if (order && order.require_confirmation) {
+    if ((order && order.require_confirmation) || transaction.type === 'hold') {
       model = await this.processingService.hold({
         card,
         cashbox,
@@ -368,7 +378,141 @@ export class PaymentsService {
     return model;
   }
 
-  async hold(dto: IHold) {
+  async cardsAuth(data: ICardsHold) {
+    const { success: cryptoSuccess, decryptedData } =
+      this.decryptService.decryptCardCryptogram(data.cardCryptoGramPacket);
+    const cashbox = await this.prisma.cashbox.findFirst({
+      where: { public_id: decryptedData.decryptedLogin, is_active: true },
+    });
+    if (!cashbox) {
+      throw new NotFoundException('Cashbox not found');
+    }
+    const locationExists = await this.prisma.ip.findFirst({
+      where: { ip_address: data.ip },
+    });
+    let ipId: number = locationExists?.id;
+    if (!locationExists) {
+      const location = await this.getLocationUtil.getLocationByIP(data.ip);
+      const newLocation = await this.prisma.ip.create({
+        data: {
+          as: location.as,
+          city: location.city,
+          country: location.country,
+          countryCode: location.countryCode,
+          ip_address: data.ip,
+          isp: location.isp,
+          lat: location.lat,
+          lon: location.lon,
+          org: location.org,
+          region: location.region,
+          regionName: location.regionName,
+          timezone: location.timezone,
+          zip: location.zip,
+        },
+      });
+      ipId = newLocation.id;
+    }
+    if (!cryptoSuccess) {
+      const payment = await this.prisma.transaction.create({
+        data: {
+          amount: data.amount,
+          currency: '860',
+          invoice_id: data.invoiceId,
+          ip_id: ipId,
+          description: data.description,
+          cashbox_id: cashbox.id,
+          status: 'Declined',
+          reason_code: 7000,
+          type: 'threeds',
+          account_id: data.accountId,
+          fail_reason: 'Invalid cryptogram packet',
+          json_data: data.jsonData,
+        },
+      });
+      console.error({
+        time: new Date(),
+        payment,
+        cryptogram: data.cardCryptoGramPacket,
+        message: 'Invalid cryptogram packet',
+      });
+      return CoreApiResponse.wrongCryptogram();
+    }
+    const paymentWithInvoiceIdExists = await this.prisma.transaction.findFirst({
+      where: { invoice_id: data.invoiceId, cashbox_id: cashbox.id },
+    });
+    if (paymentWithInvoiceIdExists) {
+      throw new ConflictException(
+        'Transaction with such invoice already exists',
+      );
+    }
+    const { success: cSuccess, data: cData } = await this.cardService.create({
+      cashboxId: cashbox.id,
+      cryptogram: data.cardCryptoGramPacket,
+    });
+    const isTest = decryptedData.pan.includes('000000000000');
+    if (!cSuccess) {
+      await this.prisma.transaction.create({
+        data: {
+          amount: data.amount,
+          currency: '860',
+          invoice_id: data.invoiceId,
+          type: 'threeds',
+          is_test: isTest,
+          ip_id: ipId,
+          description: data.description,
+          card_id: cData.cardId,
+          cashbox_id: cashbox.id,
+          status: 'Declined',
+          account_id: data.accountId,
+          fail_reason: cData.Model.Reason,
+          reason_code: cData.Model.ReasonCode,
+          status_code: 13,
+        },
+      });
+      return cData;
+    }
+    const payment = await this.prisma.transaction.create({
+      data: {
+        amount: data.amount,
+        currency: '860',
+        type: 'hold',
+        is_test: isTest,
+        invoice_id: data.invoiceId,
+        ip_id: ipId,
+        description: data.description,
+        card_id: cData.cardId,
+        cashbox_id: cashbox.id,
+        account_id: data.accountId,
+        status: 'AwaitingAuthentication',
+        json_data: data.jsonData || null,
+      },
+    });
+    this.cardChargeTimedOut(payment.id);
+    const customData = {
+      Currency: 'UZS',
+      Amount: String(data.amount),
+      Description: data.description || null,
+      id: cData.otpId,
+      phone: cData.phone,
+    };
+    const customDataEncoded = Buffer.from(JSON.stringify(customData)).toString(
+      'base64',
+    );
+    // TODO review this return
+    return {
+      Model: {
+        TransactionId: payment.id,
+        PaReq: customDataEncoded,
+        AcsUrl: process.env.CURRENT_API_URL + '/check_areq',
+        ThreeDsCallbackId: '7be4d37f0a434c0a8a7fc0e328368d7d',
+        IFrameIsAllowed: true,
+      },
+      Success: false, //special for jet merchant
+      Message: null,
+    };
+  }
+
+  async tokensAuth(dto: IHold) {
     const card = await this.prisma.card.findFirst({
       where: { tk: dto.token, organization_id: dto.organizationId },
     });

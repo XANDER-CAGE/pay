@@ -16,7 +16,6 @@ import { Handle3dsPostDto } from './dto/handle3dsPost.dto';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { AuthGuard } from 'src/common/guards/auth.guard';
-import { HoldDto } from './dto/hold.dto';
 import * as path from 'path';
 import * as fs from 'fs';
 import { RefundDto } from './dto/refund.dto';
@@ -26,6 +25,8 @@ import { AdminGuard } from 'src/common/guards/admin.guard';
 import { P2PDto } from './dto/p2p.dto';
 import { ApiTags } from '@nestjs/swagger';
 import { FindDto } from './dto/find.dto';
+import { CardsHoldDto } from './dto/cards-hold.dto';
+import { TokensHoldDto } from './dto/tokens-hold.dto';
 
 @ApiTags('Transactions')
 @Controller('payments')
@@ -72,10 +73,25 @@ export class PaymentsController {
   }
 
   @UseGuards(AuthGuard)
-  @HttpCode(200)
+  @HttpCode(201)
+  @Post('cards/auth')
+  async cardsAuth(@Body() dto: CardsHoldDto, @Req() req: MyReq) {
+    return await this.paymentsService.cardsAuth({
+      accountId: dto.AccountId,
+      amount: +dto.Amount,
+      cardCryptoGramPacket: dto.CardCryptogramPacket,
+      description: dto.Description,
+      invoiceId: dto.InvoiceId,
+      ip: req['x-real-ip'],
+      jsonData: dto.JsonData,
+    });
+  }
+
+  @UseGuards(AuthGuard)
+  @HttpCode(201)
   @Post('tokens/auth')
-  async hold(@Body() dto: HoldDto, @Req() req: MyReq) {
-    return await this.paymentsService.hold({
+  async tokensAuth(@Body() dto: TokensHoldDto, @Req() req: MyReq) {
+    return await this.paymentsService.tokensAuth({
       ip: req['x-real-ip'],
       amount: String(dto.Amount),
       invoiceId: dto.InvoiceId,

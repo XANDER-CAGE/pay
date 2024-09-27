@@ -1,8 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty } from 'class-validator';
-import { IsOptional } from 'class-validator';
+import { IsNotEmpty, IsOptional } from 'class-validator';
 
-export class HoldDto {
+export class CardsHoldDto {
   @ApiProperty()
   @IsNotEmpty()
   Amount: string | number;
@@ -24,10 +23,10 @@ export class HoldDto {
   AccountId: string;
 
   @ApiProperty()
-  @IsNotEmpty()
-  Token: string;
-
-  @ApiProperty()
   @IsOptional()
   JsonData: object;
+
+  @ApiProperty()
+  @IsNotEmpty()
+  CardCryptogramPacket: string;
 }

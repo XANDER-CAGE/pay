@@ -52,7 +52,9 @@ export class HookDto {
     this.PaymentCurrency = '860';
     this.Status = transaction.status;
     this.TestMode = transaction.is_test;
-    this.Data = jsonData ? JSON.stringify(jsonData) : null;
+    this.Data = jsonData
+      ? JSON.stringify(jsonData || transaction.json_data)
+      : null;
     this.Token = card.tk;
     this.ReasonCode =
       transaction.reason_code == 0 ? 0 : transaction.reason_code || null;
