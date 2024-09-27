@@ -156,6 +156,8 @@ export class UzcardProcessingService {
         processing: 'uzcard',
       },
     });
+    console.log('EPOS', epos);
+
     if (!epos) {
       throw new NotFoundException('EPOS not found');
     }
@@ -187,6 +189,8 @@ export class UzcardProcessingService {
         password: this.uzCardPassword,
       },
     });
+    console.log('RESPONSE FROM UZ CARD', response.data);
+
     const data = {
       AccountId: transaction.account_id,
       Amount: Number(transaction.amount),
@@ -259,6 +263,8 @@ export class UzcardProcessingService {
     //   phone,
     //   processing: 'uzcard',
     // });
+    console.log('MODEL', CoreApiResponse.success(data));
+
     return CoreApiResponse.success(data);
   }
 

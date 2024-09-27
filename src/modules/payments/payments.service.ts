@@ -239,6 +239,8 @@ export class PaymentsService {
   }
 
   async handle3DSPost(dto: Handle3dsPostDto): Promise<CoreApiResponse> {
+    console.log('DTO', dto);
+
     let transactionId;
     if (
       typeof dto.TransactionId === 'string' &&
@@ -258,6 +260,8 @@ export class PaymentsService {
     } else {
       transactionId = +dto.TransactionId;
     }
+    console.log('TransactionID: ', transactionId);
+
     const transaction = await this.prisma.transaction.findFirst({
       where: { id: transactionId },
       include: {
@@ -278,6 +282,8 @@ export class PaymentsService {
     if (!company) {
       throw new NotFoundException('Company not found');
     }
+    console.log('COMPANY', company);
+
     const ip = transaction.ip;
     const card = transaction.card;
     const isTest = card.processing_card_token == 'test';
@@ -353,26 +359,14 @@ export class PaymentsService {
         where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
       });
       if (payHook) {
-        this.hookService.hook(
-          payHook.url,
-          'Payment',
-          updatedPayment,
-          card,
-          order.json_data,
-        );
+        this.hookService.hook(payHook.url, 'Payment', updatedPayment, card);
       }
     } else {
       const failHook = await this.prisma.hook.findFirst({
         where: { cashbox_id: cashbox.id, is_active: true, type: 'fail' },
       });
       if (failHook) {
-        this.hookService.hook(
-          failHook.url,
-          'Payment',
-          updatedPayment,
-          card,
-          order.json_data,
-        );
+        this.hookService.hook(failHook.url, 'Payment', updatedPayment, card);
       }
     }
     return model;
