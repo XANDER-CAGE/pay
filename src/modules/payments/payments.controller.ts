@@ -73,7 +73,7 @@ export class PaymentsController {
   }
 
   @UseGuards(AuthGuard)
-  @HttpCode(200)
+  @HttpCode(500)
   @Post('cards/auth')
   async cardsAuth(@Body() dto: CardsHoldDto, @Req() req: MyReq) {
     return await this.paymentsService.cardsAuth({
@@ -88,7 +88,7 @@ export class PaymentsController {
   }
 
   @UseGuards(AuthGuard)
-  @HttpCode(200)
+  @HttpCode(500)
   @Post('tokens/auth')
   async tokensAuth(@Body() dto: TokensHoldDto, @Req() req: MyReq) {
     return await this.paymentsService.tokensAuth({
