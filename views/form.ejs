@@ -2,6 +2,7 @@
   window.onload = submitData;
 
   function submitData() {
+    console.log('<%= HomeUrl %>');
     const url = '<%= TermUrl %>';
     const data = {
       PaRes: '<%= PaRes %>',
@@ -16,8 +17,19 @@
       },
       body: JSON.stringify(data),
     })
-      .then((response) => response.json())
-      .then((data) => console.log(data))
-      .catch((error) => console.error('Error:', error));
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log('Success:', data);
+        window.location.href = '<%= HomeUrl %>?status=true';
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+        window.location.href = '<%= HomeUrl %>?status=false';
+      });
   }
 </script>
