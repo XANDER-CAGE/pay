@@ -21,9 +21,6 @@
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
-      })
-      .then((data) => {
-        console.log('Success:', data);
         window.location.href = '<%= HomeUrl %>?status=true';
       })
       .catch((error) => {
