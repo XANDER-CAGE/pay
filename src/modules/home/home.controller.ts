@@ -34,6 +34,7 @@ export class HomeController {
       description: decodedPaReq.Description,
       md: decodeAReqJson.MD,
       TermUrl: decodeAReqJson.TermUrl,
+      HomeUrl: decodeAReqJson.HomeUrl,
       phone: decodedPaReq.phone,
     };
   }
@@ -60,12 +61,12 @@ export class HomeController {
     const paResBase64 = Buffer.from(JSON.stringify(paResData)).toString(
       'base64',
     );
-
     try {
       return {
         PaRes: paResBase64,
         md: dto.md,
         TermUrl: dto.TermUrl,
+        HomeUrl: dto.HomeUrl,
       };
     } catch (error) {
       console.error(

@@ -2,21 +2,22 @@
   window.onload = submitData;
 
   function submitData() {
-    const url = "<%= TermUrl %>";
+    const url = '<%= TermUrl %>';
     const data = {
-      PaRes: "<%= PaRes %>",
-      TransactionId: "<%= md %>"
+      PaRes: '<%= PaRes %>',
+      TransactionId: '<%= md %>',
+      HomeUrl: '<%= HomeUrl %>',
     };
 
     fetch(url, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json"
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     })
-    .then(response => response.json())
-    .then(data => console.log(data))
-    .catch(error => console.error('Error:', error));
+      .then((response) => response.json())
+      .then((data) => console.log(data))
+      .catch((error) => console.error('Error:', error));
   }
 </script>

@@ -10,4 +10,9 @@ export class Handle3dsPostDto {
   @IsString()
   @IsNotEmpty()
   PaRes: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  HomeUrl: string;
 }

@@ -21,4 +21,9 @@ export class ValidateDto {
   @IsNumberString()
   @IsNotEmpty()
   md: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  HomeUrl: string;
 }
