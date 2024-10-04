@@ -1,81 +1,104 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+  <head>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css"
+    />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title><%= title %></title>
     <style>
-        body {
-            color: #000;
-            background-color: #fff;
+      body {
+        color: #000;
+        background-color: #fff;
+      }
+      .form-container {
+        max-width: 400px;
+        margin: auto;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        background: #fff;
+      }
+      .orange-button {
+        background-color: #e9532f;
+        border-color: #e9532f;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-weight: bold;
+        transition: background-color 0.3s, border-color 0.3s;
+      }
+      .orange-button:hover {
+        background-color: #ca4724;
+        border-color: #ca4724;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+      .info-text,
+      .custom-text {
+        color: #333;
+      }
+      label,
+      input {
+        color: #000;
+      }
+      input {
+        background-color: #eee;
+        border: 1px solid #aaa;
+      }
+      @media screen and (max-height: 500px) {
+        body,
+        html {
+          height: 100%;
+          overflow: auto;
         }
-        .form-container {
-            max-width: 400px;
-            margin: auto;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            background: #fff;
-        }
-        .orange-button {
-            background-color: #E9532F;
-            border-color: #E9532F;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-weight: bold;
-            transition: background-color 0.3s, border-color 0.3s;
-        }
-        .orange-button:hover {
-            background-color: #ca4724;
-            border-color: #ca4724;
-        }
-        .logo {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .info-text, .custom-text {
-            color: #333;
-        }
-        label, input {
-            color: #000;
-        }
-        input {
-            background-color: #eee;
-            border: 1px solid #aaa;
-        }
-        @media screen and (max-height: 500px) {
-            body, html {
-                height: 100%;
-                overflow: auto;
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <main class="container">
-        <div class="logo">
-            <svg width="46" height="38" viewBox="0 0 46 38" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M8.34998 5.52999C17.7763 -2.49379 31.9602 -1.40083 40.0305 7.97133C47.4736 16.615 47.1169 29.2819 39.6217 37.4933L6.24208 37.4217C6.12512 37.2921 6.00899 37.1612 5.89438 37.0283C-2.17585 27.6561 -1.07643 13.5538 8.34998 5.52999Z" fill="#E9532F"></path></svg>
-            <span>Global Pay</span>
-        </div>
-        <div class="form-container">
-            <p><%= description %></p>
-            <p><%= amount %> сум</p>
-            <p>На номер<%= phone %> отправлено СМС с одноразовым кодом, введите код для подтверждения номера</p>
-            <form action="https://pay.dnsc.uz/validate" method="post">
-                <input type="hidden" name="md" value="<%= md %>">
-                <input type="hidden" name="TermUrl" value="<%= TermUrl %>">
-                <input type="hidden" name="otpId" value="<%= otpId %>">
-                <label for="smsCode">Введите код из SMS:</label>
-                <input type="text" id="smsCode" name="smsCode" required>
-                <button type="submit" class="orange-button">Отправить</button>
-            </form>
-        </div>
+      <div class="logo">
+        <svg
+          width="46"
+          height="38"
+          viewBox="0 0 46 38"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fill-rule="evenodd"
+            clip-rule="evenodd"
+            d="M8.34998 5.52999C17.7763 -2.49379 31.9602 -1.40083 40.0305 7.97133C47.4736 16.615 47.1169 29.2819 39.6217 37.4933L6.24208 37.4217C6.12512 37.2921 6.00899 37.1612 5.89438 37.0283C-2.17585 27.6561 -1.07643 13.5538 8.34998 5.52999Z"
+            fill="#E9532F"
+          ></path>
+        </svg>
+        <span>Global Pay</span>
+      </div>
+      <div class="form-container">
+        <p><%= description %></p>
+        <p><%= amount %> сум</p>
+        <p>
+          На номер<%= phone %> отправлено СМС с одноразовым кодом, введите код
+          для подтверждения номера
+        </p>
+        <form action="https://pay.dnsc.uz/validate" method="post">
+          <input type="hidden" name="md" value="<%= md %>" />
+          <input type="hidden" name="TermUrl" value="<%= TermUrl %>" />
+          <input type="hidden" name="HomeUrl" value="<%= HomeUrl %>" />
+          <input type="hidden" name="otpId" value="<%= otpId %>" />
+          <label for="smsCode">Введите код из SMS:</label>
+          <input type="text" id="smsCode" name="smsCode" required />
+          <button type="submit" class="orange-button">Отправить</button>
+        </form>
+      </div>
     </main>
-</body>
+  </body>
 </html>

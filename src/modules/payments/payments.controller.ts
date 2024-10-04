@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
@@ -27,6 +28,8 @@ import { ApiTags } from '@nestjs/swagger';
 import { FindDto } from './dto/find.dto';
 import { CardsHoldDto } from './dto/cards-hold.dto';
 import { TokensHoldDto } from './dto/tokens-hold.dto';
+import { Response } from 'express';
+import { Url } from 'url';
 
 @ApiTags('Transactions')
 @Controller('payments')
@@ -59,17 +62,26 @@ export class PaymentsController {
   }
 
   @Post('cards/post3ds')
-  async post3ds(@Body() dto: Handle3dsPostDto, @Req() req: MyReq) {
+  async post3ds(
+    @Body() dto: Handle3dsPostDto,
+    @Req() req: MyReq,
+    @Res() res: Response,
+  ) {
     const requestId: string = req.headers['x-request-id'] as string;
     const cache: string = await this.cacheManager.get(requestId);
+
+    const redirectUrl = new URL(dto.HomeUrl);
+
     if (cache) {
-      return JSON.parse(cache);
+      redirectUrl.searchParams.append('status', 'true');
+      return res.redirect(redirectUrl.toString());
     }
     const result = await this.paymentsService.handle3DSPost(dto);
     if (requestId) {
       await this.cacheManager.set(requestId, JSON.stringify(result));
     }
-    return result;
+    redirectUrl.searchParams.append('status', result.Success.toString());
+    return res.redirect(redirectUrl.toString());
   }
 
   @UseGuards(AuthGuard)
