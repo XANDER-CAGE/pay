@@ -65,7 +65,7 @@ export class HomeController {
       return {
         PaRes: paResBase64,
         md: dto.md,
-        TermUrl: dto.TermUrl,
+        TermUrl: dto.TermUrl,                                     
         HomeUrl: dto.HomeUrl,
       };
     } catch (error) {

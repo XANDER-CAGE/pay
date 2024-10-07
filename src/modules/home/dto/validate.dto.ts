@@ -23,7 +23,7 @@ export class ValidateDto {
   md: string;
 
   @ApiProperty()
-  @IsUrl()
+  @IsString()
   @IsNotEmpty()
   HomeUrl: string;
 }
