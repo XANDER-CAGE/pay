@@ -1,5 +1,4 @@
 import {
-  ConflictException,
   Inject,
   Injectable,
   NotAcceptableException,
@@ -167,9 +166,7 @@ export class PaymentsService {
       where: { invoice_id: data.invoiceId, cashbox_id: cashbox.id },
     });
     if (paymentWithInvoiceIdExists) {
-      throw new ConflictException(
-        'Transaction with such invoice already exists',
-      );
+      return await this.find(data.invoiceId, cashbox.id);
     }
     const { success: cSuccess, data: cData } = await this.cardService.create({
       cashboxId: cashbox.id,
@@ -435,9 +432,7 @@ export class PaymentsService {
       where: { invoice_id: data.invoiceId, cashbox_id: cashbox.id },
     });
     if (paymentWithInvoiceIdExists) {
-      throw new ConflictException(
-        'Transaction with such invoice already exists',
-      );
+      return await this.find(data.invoiceId, cashbox.id);
     }
     const { success: cSuccess, data: cData } = await this.cardService.create({
       cashboxId: cashbox.id,
@@ -518,9 +513,7 @@ export class PaymentsService {
       },
     });
     if (paymentWithInvoiceExists) {
-      throw new ConflictException(
-        'Transaction with such invoice already exists',
-      );
+      return await this.find(dto.invoiceId, dto.cashboxId);
     }
     if (!card) {
       model = CoreApiResponse.issuerNotFound({
@@ -548,7 +541,7 @@ export class PaymentsService {
       return model;
     }
     if (paymentWithInvoiceExists) {
-      throw new ConflictException('Transaction with Invoice already exists');
+      return await this.find(dto.invoiceId, dto.cashboxId);
     }
     let ip = await this.prisma.ip.findFirst({
       where: { ip_address: dto.ip },
@@ -812,7 +805,7 @@ export class PaymentsService {
       },
     });
     if (existingPayment) {
-      throw new ConflictException('Transaction with invoice id already exists');
+      return (await this.find(dto.invoiceId, dto.cashboxId)) as CoreApiResponse;
     }
     const card = await this.prisma.card.findFirst({
       where: {
@@ -1054,10 +1047,10 @@ export class PaymentsService {
     return res;
   }
 
-  async find(invoiceId: string, req: MyReq) {
+  async find(invoiceId: string, cashbox_id: number) {
     const transaction = await this.prisma.transaction.findFirst({
       where: {
-        cashbox_id: req.cashboxId,
+        cashbox_id: cashbox_id,
         invoice_id: invoiceId,
       },
       include: { card: true, ip: true, cashbox: true },

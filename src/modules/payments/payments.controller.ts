@@ -205,8 +205,8 @@ export class PaymentsController {
 
   @HttpCode(200)
   @Post('find')
-  async find(@Body() dto: FindDto, @Req() req: MyReq) {
-    return await this.paymentsService.find(dto.InvoiceId, req);
+  async find(@Body() dto: FindDto) {
+    return await this.paymentsService.find(dto.InvoiceId, dto.cashboxId);
   }
 
   @Get(':transactionId')
