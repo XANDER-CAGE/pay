@@ -6,9 +6,4 @@ export class FindDto {
   @IsString()
   @IsNotEmpty()
   InvoiceId: string;
-
-  @ApiProperty()
-  @IsNumber()
-  @IsNotEmpty()
-  cashboxId: number;
 }
