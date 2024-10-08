@@ -15,9 +15,4 @@ export class CheckAreqPostDto {
   @IsNotEmpty()
   @IsUrl()
   TermUrl: string;
-
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsUrl()
-  HomeUrl: string;
 }

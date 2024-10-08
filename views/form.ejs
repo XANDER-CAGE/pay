@@ -19,7 +19,7 @@
     })
       .then((response) => {
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          window.location.href = '<%= HomeUrl %>?status=false';
         }
         window.location.href = '<%= HomeUrl %>?status=true';
       })
