@@ -2,13 +2,16 @@
   window.onload = submitData;
 
   function submitData() {
-    console.log('<%= HomeUrl %>');
     const url = '<%= TermUrl %>';
     const data = {
       PaRes: '<%= PaRes %>',
       TransactionId: '<%= md %>',
-      HomeUrl: '<%= HomeUrl %>',
     };
+
+    const homeUrl = '<%= HomeUrl %>';
+    if (homeUrl !== '') {
+      data.HomeUrl = homeUrl;
+    }
 
     fetch(url, {
       method: 'POST',
@@ -19,13 +22,19 @@
     })
       .then((response) => {
         if (!response.ok) {
-          window.location.href = '<%= HomeUrl %>?status=false';
+          if (homeUrl !== '') {
+            window.location.href = homeUrl + '?status=false';
+          }
         }
-        window.location.href = '<%= HomeUrl %>?status=true';
+        if (homeUrl !== '') {
+          window.location.href = homeUrl + '?status=true';
+        }
       })
       .catch((error) => {
         console.error('Error:', error);
-        window.location.href = '<%= HomeUrl %>?status=false';
+        if (homeUrl !== '') {
+          window.location.href = homeUrl + '?status=false';
+        }
       });
   }
 </script>
