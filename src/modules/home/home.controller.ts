@@ -62,9 +62,17 @@ export class HomeController {
       'base64',
     );
     try {
+      let md = dto.md;
+      if (dto.TermUrl === 'https://widget.gpay.uz/3ds-callback') {
+        md = JSON.stringify({
+          SuccessUrl: 'https://widget.gpay.uz/success',
+          FailUrl: 'https://widget.gpay.uz/error',
+          TransactionId: dto.md,
+        });
+      }
       return {
         PaRes: paResBase64,
-        md: dto.md,
+        md: md,
         TermUrl: dto.TermUrl,
         HomeUrl: dto.HomeUrl || '',
       };
