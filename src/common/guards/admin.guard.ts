@@ -3,10 +3,9 @@ import {
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AdminGuard implements CanActivate {
@@ -23,49 +22,14 @@ export class AdminGuard implements CanActivate {
     const credentials = Buffer.from(base64Credentials, 'base64').toString(
       'ascii',
     );
-    const [public_id, password_api] = credentials.split(':');
-    const cashbox = await this.prisma.cashbox.findFirst({
-      where: { public_id, password_api, id: 2 },
-      include: { company: true },
+    const [username, password] = credentials.split(':');
+    const admin = await this.prisma.admin.findFirst({
+      where: { username, password, deactivated_at: null },
     });
-    if (!cashbox) {
-      throw new UnauthorizedException({
-        success: false,
-        code: 11,
-        error: 'InvalidAccountId',
-      });
-    }
-    if (cashbox.is_active != true) {
-      throw new ForbiddenException('Учетная запись деактивирована');
-    }
-    let session = await this.prisma.session.findFirst({
-      where: {
-        cashbox_id: cashbox.id,
-      },
-    });
-    if (session) {
-      await this.prisma.session.update({
-        where: {
-          id: session.id,
-        },
-        data: {
-          sid: uuidv4(),
-          expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        },
-      });
-    } else {
-      session = await this.prisma.session.create({
-        data: {
-          cashbox_id: cashbox.id,
-          sid: uuidv4(),
-          expires: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        },
-      });
-    }
-    request.basicAuthLogin = public_id;
-    request.cashboxId = cashbox.id;
-    request.sessionId = session.id;
-    request.organizationId = cashbox.company.organization_id;
+    if (!admin) throw new UnauthorizedException();
+
+    request.adminId = admin.id;
+    request.adminUsername = admin.username;
     return true;
   }
 }

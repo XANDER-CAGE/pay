@@ -13,6 +13,7 @@ import { BinsModule } from './modules/bins/bins.module';
 import { CardsModule } from './modules/cards/cards.module';
 import { HookModule } from './modules/hook/hook.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { CabinetModule } from './modules/cabinet/cabinet.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { OrdersModule } from './modules/orders/orders.module';
     CardsModule,
     HookModule,
     OrdersModule,
+    CabinetModule,
   ],
   controllers: [],
   providers: [],

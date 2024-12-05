@@ -77,20 +77,21 @@ model cashbox {
 }
 
 model company {
-  id                Int           @id @default(autoincrement())
-  account_id        String?       @db.VarChar
-  trade_name        String        @db.VarChar
-  legal_name        String        @db.VarChar
-  business_area     String        @db.VarChar
-  tax_id_number     String        @db.VarChar
-  bank_account      String        @db.VarChar
-  director_fullname String        @db.VarChar
-  address           String        @db.VarChar
+  id                Int                 @id @default(autoincrement())
+  account_id        String?             @db.VarChar
+  trade_name        String              @db.VarChar
+  legal_name        String              @db.VarChar
+  business_area     String              @db.VarChar
+  tax_id_number     String              @db.VarChar
+  bank_account      String              @db.VarChar
+  director_fullname String              @db.VarChar
+  address           String              @db.VarChar
   organization_id   Int?
-  created_at        DateTime?     @default(now()) @db.Timestamp(6)
-  updated_at        DateTime?     @default(now()) @db.Timestamp(6)
+  created_at        DateTime?           @default(now()) @db.Timestamp(6)
+  updated_at        DateTime?           @default(now()) @db.Timestamp(6)
   cashbox           cashbox[]
-  organization      organization? @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  organization      organization?       @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  admins            adminsOnCompanies[]
 }
 
 model epos {
@@ -264,6 +265,25 @@ model order {
   payment_date          DateTime? @db.Timestamptz(6)
   payment_date_iso      String?   @db.VarChar(255)
   created_at            DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model admin {
+  id             Int                 @id @default(autoincrement())
+  username       String
+  password       String
+  deactivated_at DateTime?
+  created_at     DateTime?           @default(now()) @db.Timestamp(6)
+  updated_at     DateTime?           @default(now()) @updatedAt @db.Timestamp(6)
+  companies      adminsOnCompanies[]
+}
+
+model adminsOnCompanies {
+  admin_id   Int
+  admin      admin   @relation(fields: [admin_id], references: [id])
+  company_id Int
+  company    company @relation(fields: [company_id], references: [id])
+
+  @@id([admin_id, company_id])
 }
 
 enum payment_status {

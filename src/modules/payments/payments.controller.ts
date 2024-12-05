@@ -7,7 +7,6 @@ import {
   Param,
   Post,
   Req,
-  Res,
   UseGuards,
 } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
@@ -28,8 +27,6 @@ import { ApiTags } from '@nestjs/swagger';
 import { FindDto } from './dto/find.dto';
 import { CardsHoldDto } from './dto/cards-hold.dto';
 import { TokensHoldDto } from './dto/tokens-hold.dto';
-import { Response } from 'express';
-import { json } from 'stream/consumers';
 
 @ApiTags('Transactions')
 @Controller('payments')
