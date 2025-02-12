@@ -1,19 +1,20 @@
-import { Module } from '@nestjs/common';
-import { PaymentsModule } from './modules/payments/payments.module';
-import { ConfigModule } from '@nestjs/config';
-import { DecryptModule } from './modules/decrypt/decrypt.module';
 import { CacheModule } from '@nestjs/cache-manager';
-import { PrismaModule } from './modules/prisma/prisma.module';
-import { ProcessingModule } from './modules/processing/processing.module';
-import { HomeModule } from './modules/home/home.module';
-import { NotificationModule } from './modules/notification/notification.module';
-import { CronModule } from './modules/cron/cron.module';
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { BinsModule } from './modules/bins/bins.module';
-import { CardsModule } from './modules/cards/cards.module';
-import { HookModule } from './modules/hook/hook.module';
-import { OrdersModule } from './modules/orders/orders.module';
 import { CabinetModule } from './modules/cabinet/cabinet.module';
+import { CardsModule } from './modules/cards/cards.module';
+import { CronModule } from './modules/cron/cron.module';
+import { DecryptModule } from './modules/decrypt/decrypt.module';
+import { HomeModule } from './modules/home/home.module';
+import { HookModule } from './modules/hook/hook.module';
+import { NotificationModule } from './modules/notification/notification.module';
+import { OrdersModule } from './modules/orders/orders.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { PrismaModule } from './modules/prisma/prisma.module';
+import { ProcessingModule } from './modules/processing/processing.module';
+import { ReceiptModule } from './modules/receipt/receipt.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { CabinetModule } from './modules/cabinet/cabinet.module';
     HookModule,
     OrdersModule,
     CabinetModule,
+    ReceiptModule,
   ],
   controllers: [],
   providers: [],
