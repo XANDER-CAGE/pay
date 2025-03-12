@@ -21,6 +21,6 @@ import { PaymentsTESTService } from './payments.test.service';
   ],
   controllers: [PaymentsController],
   providers: [PaymentsService, getLocationProvider, PaymentsTESTService],
-  exports: [PaymentsService]
+  exports: [PaymentsService],
 })
 export class PaymentsModule {}

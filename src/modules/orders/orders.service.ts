@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { MyReq } from 'src/common/interfaces/myReq.interface';
+import { NotificationService } from '../notification/notification.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { NotificationService } from '../notification/notification.service';
-import { MyReq } from 'src/common/interfaces/myReq.interface';
 
 @Injectable()
 export class OrdersService {
@@ -91,6 +91,22 @@ export class OrdersService {
   async getOrderById(uniqueId: string) {
     return this.prisma.order.findFirst({
       where: { unique_id: uniqueId },
+    });
+  }
+
+  async cancelOrder(id: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { unique_id: id },
+    });
+
+    if (!order) {
+      throw new BadRequestException('Order not found');
+    }
+    await this.prisma.order.update({
+      where: { id: order.id },
+      data: {
+        status: 'Cancelled',
+      },
     });
   }
 }

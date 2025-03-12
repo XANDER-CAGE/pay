@@ -4,24 +4,23 @@ import {
   NotAcceptableException,
   NotFoundException,
 } from '@nestjs/common';
+import { SchedulerRegistry } from '@nestjs/schedule';
+import { isObject } from 'lodash';
+import { CoreApiResponse } from 'src/common/classes/model.class';
 import {
   GetLocationUtil,
   getLocationSymbol,
 } from 'src/common/utils/getGeoLocation.util';
+import { CardsService } from '../cards/cards.service';
 import { DecryptService } from '../decrypt/decrypt.service';
-import { CoreApiResponse } from 'src/common/classes/model.class';
+import { HookService } from '../hook/hook.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { IConfirmHoldResponse } from '../processing/interfaces/confirmHoldResponse.interface';
 import { ProcessingService } from '../processing/processing.service';
+import { ConfirmHoldDto } from './dto/confirmHold.dto';
 import { Handle3dsPostDto } from './dto/handle3dsPost.dto';
 import { RefundDto } from './dto/refund.dto';
-import { ConfirmHoldDto } from './dto/confirmHold.dto';
-import { CardsService } from '../cards/cards.service';
-import { SchedulerRegistry } from '@nestjs/schedule';
-import { HookService } from '../hook/hook.service';
-import { IConfirmHoldResponse } from '../processing/interfaces/confirmHoldResponse.interface';
 import { PaymentsTESTService } from './payments.test.service';
-import { isObject } from 'lodash';
-import { MyReq } from 'src/common/interfaces/myReq.interface';
 
 type otp = {
   attempts: number;
@@ -323,8 +322,13 @@ export class PaymentsService {
       return model;
     }
     const order = await this.prisma.order.findFirst({
-      where: { invoice_id: transaction.invoice_id },
+      where: {
+        invoice_id: transaction.invoice_id,
+      },
     });
+    if (order && order.status == 'Cancelled') {
+      throw new NotAcceptableException('Order cancelled');
+    }
     let model: CoreApiResponse;
     if ((order && order.require_confirmation) || transaction.type === 'hold') {
       model = await this.processingService.hold({
