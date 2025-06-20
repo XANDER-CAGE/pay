@@ -96,12 +96,187 @@ export class PaymentsService {
     this.cryptoPayTimeout =
       Number(process.env.PAY_VIA_CRYPTO_TIMEOUT_IN_MINUTES) || 10;
   }
+
+  async test() {
+      const uuid = require('uuid').v4();
+      return {
+        Success: true,
+        Message: uuid
+      };
+  }
+
+  async getTransaction(transactionId: number, cashboxId: number) {
+    const transaction = await this.prisma.transaction.findFirst({
+      where: {
+        id: transactionId,
+        cashbox_id: cashboxId,
+      },
+      include: {
+        card: true,
+        ip: true,
+        cashbox: true,
+      },
+    });
+
+    if (!transaction) {
+      return {
+        Success: false,
+        Message: 'Transaction not found'
+      };
+    }
+
+    const card = transaction.card;
+    const ip = transaction.ip;
+    const cashbox = transaction.cashbox;
+
+    const model = {
+      ReasonCode: transaction.reason_code || 0,
+      PublicId: cashbox.public_id,
+      TerminalUrl: 'https://pay.dnsc.uz',
+      TransactionId: transaction.id,
+      Amount: Number(transaction.amount),
+      Currency: 'UZS',
+      CurrencyCode: 860,
+      PaymentAmount: Number(transaction.amount),
+      PaymentCurrency: 'UZS',
+      PaymentCurrencyCode: 860,
+      InvoiceId: transaction.invoice_id,
+      AccountId: transaction.account_id,
+      Email: null,
+      Description: transaction.description,
+      JsonData: transaction.json_data,
+      CreatedDate: `/Date(${transaction.created_at.getTime()})/`,
+      CreatedDateIso: transaction.created_at.toISOString(),
+      PayoutDate: null,
+      PayoutDateIso: null,
+      PayoutAmount: null,
+      AuthDate: transaction.status === 'Authorized' || transaction.status === 'Completed' 
+        ? `/Date(${transaction.created_at.getTime()})/` : null,
+      AuthDateIso: transaction.status === 'Authorized' || transaction.status === 'Completed' 
+        ? transaction.created_at.toISOString() : null,
+      ConfirmDate: transaction.status === 'Completed' 
+        ? `/Date(${transaction.updated_at.getTime()})/` : null,
+      ConfirmDateIso: transaction.status === 'Completed' 
+        ? transaction.updated_at.toISOString() : null,
+      AuthCode: transaction.status === 'Authorized' || transaction.status === 'Completed' 
+        ? 'A1B2C3' : null,
+      TestMode: transaction.is_test,
+      Rrn: null,
+      OriginalTransactionId: null,
+      FallBackScenarioDeclinedTransactionId: null,
+      IpAddress: ip?.ip_address,
+      IpCountry: ip?.country,
+      IpCity: ip?.city,
+      IpRegion: ip?.region,
+      IpDistrict: ip?.regionName,
+      IpLatitude: ip?.lat,
+      IpLongitude: ip?.lon,
+      CardFirstSix: card?.pan?.slice(0, 6),
+      CardLastFour: card?.pan?.slice(-4),
+      CardExpDate: card?.expiry,
+      CardType: card?.processing,
+      CardProduct: null,
+      CardCategory: 'Не определен ()',
+      EscrowAccumulationId: null,
+      IssuerBankCountry: 'UZ',
+      Issuer: card?.bank_name,
+      CardTypeCode: 0,
+      Status: transaction.status,
+      StatusCode: this.getStatusCode(transaction.status),
+      CultureName: 'uz',
+      Reason: this.getReasonByCode(transaction.reason_code),
+      CardHolderMessage: this.getCardHolderMessage(transaction.status, transaction.reason_code),
+      Type: this.getTransactionType(transaction.type),
+      Refunded: !!transaction.refunded_date,
+      Name: card?.fullname,
+      Token: card?.tk,
+      SubscriptionId: null,
+      GatewayName: card?.bank_name,
+      AndroidPay: false,
+      WalletType: '',
+      TotalFee: 0,
+    };
+
+    return {
+      Model: model,
+      Success: true,
+      Message: null
+    };
+  }
+
+  async topupByCryptogram(data: any) {
+    // Логика выплаты по криптограмме
+    // Адаптируем под местные процессинги или банки
+    throw new Error('Topup by cryptogram not implemented for local processing');
+  }
+
+  async topupByToken(data: any) {
+    // Логика выплаты по токену
+    // Адаптируем под местные процессинги или банки
+    throw new Error('Topup by token not implemented for local processing');
+  }
+
+  private getStatusCode(status: string): number {
+    const statusCodes = {
+      'Authorized': 2,
+      'Completed': 3,
+      'Declined': 5,
+      'Cancelled': 6,
+      'Pending': 1,
+      'AwaitingAuthentication': 1,
+    };
+    return statusCodes[status] || 0;
+  }
+
+  private getReasonByCode(reasonCode: number): string {
+    const reasonCodes = {
+      0: 'Approved',
+      5051: 'InsufficientFunds',
+      5015: 'No such issuer',
+      5005: 'DoNotHonor',
+      7000: 'Wrong cryptogram packet',
+      5206: 'Authentication failed',
+      5000: 'Transaction is processing',
+      5057: 'Transaction Not Permitted',
+      6002: 'InvalidErrorCode',
+    };
+    return reasonCodes[reasonCode] || 'Unknown';
+  }
+
+  private getCardHolderMessage(status: string, reasonCode: number): string {
+    if (status === 'Completed') return 'Оплата успешно проведена';
+    if (status === 'Authorized') return 'Холдирование успешно авторизован';
+    if (reasonCode === 5051) return 'Недостаточно средств на карте';
+    if (reasonCode === 5005) return 'Свяжитесь с вашим банком или воспользуйтесь другой картой';
+    if (reasonCode === 5015) return 'Токен карты не найден';
+    if (reasonCode === 5057) return 'карта заблокирована или еще не активирована';
+    if (reasonCode === 5206) return '3-D Secure авторизация не пройдена';
+    if (reasonCode === 7000) return 'Неправильная криптограмма';
+    return 'Ошибка обработки платежа';
+  }
+
+  private getTransactionType(type: string): number {
+    const types = {
+      'threeds': 0,
+      'recurrent': 0,
+      'hold': 0,
+      'credit': 2,
+      'p2p': 2,
+    };
+    return types[type] || 0;
+  }
+
   async charge(data: ICardsChargeData) {
     const { success: cryptoSuccess, decryptedData } =
       this.decryptService.decryptCardCryptogram(data.cardCryptoGramPacket);
+
+    const currency = data.currency || 'UZS';
+    const currencyCode = this.getCurrencyCode(currency);
+
     const order = await this.prisma.order.findFirst({
       where: { invoice_id: data.invoiceId },
     });
+
     if (order && order.amount != data.amount) {
       throw new NotAcceptableException('Different amount');
     }
@@ -232,6 +407,17 @@ export class PaymentsService {
       Success: false, //special for jet merchant
       Message: null,
     };
+  }
+
+  private getCurrencyCode(currency: string): number {
+    const currencyCodes = {
+      'RUB': 643,
+      'USD': 840,
+      'EUR': 978,
+      'GBP': 826,
+      'UZS': 860
+    };
+    return currencyCodes[currency] || 860; // По умолчанию UZS
   }
 
   async handle3DSPost(dto: Handle3dsPostDto): Promise<CoreApiResponse> {

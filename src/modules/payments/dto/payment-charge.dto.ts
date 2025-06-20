@@ -1,40 +1,118 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsInt,
   IsJSON,
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsNumber,
+  IsEmail,
+  IsUrl,
+  IsBoolean,
+  ValidateNested,
+  IsIP,
+  IsEnum,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import { PayerDto } from '../../../common/interfaces/payer.interface';
+
+enum Currency {
+  RUB = 'RUB',
+  USD = 'USD', 
+  EUR = 'EUR',
+  GBP = 'GBP',
+  UZS = 'UZS'
+}
+
+enum CultureName {
+  RU_RU = 'ru-RU',
+  EN_US = 'en-US',
+  UZ_UZ = 'uz-UZ' 
+}
 
 export class PaymentChargeDto {
-  @ApiProperty()
+  @ApiProperty({ description: 'Сумма платежа в валюте, разделитель точка' })
   @IsNotEmpty()
-  @IsInt()
+  @IsNumber()
   Amount: number;
 
-  @ApiProperty()
-  @IsNotEmpty()
-  @IsString()
-  InvoiceId: string;
+  @ApiPropertyOptional({ 
+    enum: Currency,
+    description: 'Валюта: RUB/USD/EUR/GBP/UZS. По умолчанию UZS',
+    default: Currency.UZS
+  })
+  @IsOptional()
+  @IsEnum(Currency)
+  Currency?: Currency = Currency.UZS;
 
-  @ApiProperty()
+  @ApiProperty({ description: 'IP-адрес плательщика' })
+  @IsNotEmpty()
+  @IsIP()
+  IpAddress: string;
+
+  @ApiProperty({ description: 'Криптограмма платежных данных' })
   @IsNotEmpty()
   @IsString()
   CardCryptogramPacket: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional({ description: 'Имя держателя карты латиницей' })
   @IsOptional()
   @IsString()
-  Description: string;
+  Name?: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional({ description: 'Адрес сайта, с которого совершается вызов скрипта checkout' })
+  @IsOptional()
+  @IsUrl()
+  PaymentUrl?: string;
+
+  @ApiPropertyOptional({ description: 'Номер счета или заказа' })
   @IsOptional()
   @IsString()
-  AccountId: string;
+  InvoiceId?: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional({ description: 'Описание оплаты в свободной форме' })
+  @IsOptional()
+  @IsString()
+  Description?: string;
+
+  @ApiPropertyOptional({ 
+    enum: CultureName,
+    description: 'Язык уведомлений',
+    default: CultureName.RU_RU
+  })
+  @IsOptional()
+  @IsEnum(CultureName)
+  CultureName?: CultureName = CultureName.RU_RU;
+
+  @ApiPropertyOptional({ description: 'Обязательный идентификатор пользователя для создания подписки и получения токена' })
+  @IsOptional()
+  @IsString()
+  AccountId?: string;
+
+  @ApiPropertyOptional({ description: 'E-mail плательщика, на который будет отправлена квитанция об оплате' })
+  @IsOptional()
+  @IsEmail()
+  Email?: string;
+
+  @ApiPropertyOptional({ 
+    type: PayerDto,
+    description: 'Доп. поле, куда передается информация о плательщике'
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PayerDto)
+  Payer?: PayerDto;
+
+  @ApiPropertyOptional({ description: 'Любые другие данные, которые будут связаны с транзакцией' })
   @IsOptional()
   @IsJSON()
-  JsonData: JSON;
+  JsonData?: JSON;
+
+  @ApiPropertyOptional({ 
+    description: 'Признак сохранения карточного токена для проведения оплаты по сохранённой карте',
+    default: false
+  })
+  @IsOptional()
+  @IsBoolean()
+  SaveCard?: boolean = false;
 }

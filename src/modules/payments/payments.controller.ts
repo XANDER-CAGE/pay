@@ -27,6 +27,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { FindDto } from './dto/find.dto';
 import { CardsHoldDto } from './dto/cards-hold.dto';
 import { TokensHoldDto } from './dto/tokens-hold.dto';
+import { TestDto } from './dto/test.dto'
 
 @ApiTags('Transactions')
 @Controller('payments')
@@ -36,6 +37,63 @@ export class PaymentsController {
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
 
+
+  @Get('test')
+  @HttpCode(200)
+  async test(): Promise<any> {
+    return this.paymentsService.test();
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('get')
+  @HttpCode(200)
+  async getTransaction(@Body() dto: GetTransactionDto, @Req() req: MyReq) {
+    return await this.paymentsService.getTransaction(dto.TransactionId, req.cashboxId);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('cards/topup')
+  @HttpCode(200)
+  async topupByCryptogram(@Body() dto: TopupCryptogramDto, @Req() req: MyReq) {
+    const requestId: string = req.headers['x-request-id'] as string;
+    const cache: string = await this.cacheManager.get(requestId);
+    if (cache) {
+      return JSON.parse(cache);
+    }
+    
+    const result = await this.paymentsService.topupByCryptogram({
+      ...dto,
+      cashboxId: req.cashboxId,
+    });
+    
+    if (requestId) {
+      await this.cacheManager.set(requestId, JSON.stringify(result));
+    }
+    return result;
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('token/topup')
+  @HttpCode(200)
+  async topupByToken(@Body() dto: TopupTokenDto, @Req() req: MyReq) {
+    const requestId: string = req.headers['x-request-id'] as string;
+    const cache: string = await this.cacheManager.get(requestId);
+    if (cache) {
+      return JSON.parse(cache);
+    }
+    
+    const result = await this.paymentsService.topupByToken({
+      ...dto,
+      cashboxId: req.cashboxId,
+      organizationId: req.organizationId,
+    });
+    
+    if (requestId) {
+      await this.cacheManager.set(requestId, JSON.stringify(result));
+    }
+    return result;
+  }
+
   @Post('cards/charge')
   async charge(@Body() dto: PaymentChargeDto, @Req() req: MyReq): Promise<any> {
     const requestId: string = req.headers['x-request-id'] as string;
@@ -44,7 +102,7 @@ export class PaymentsController {
       return JSON.parse(cache);
     }
     const result = await this.paymentsService.charge({
-      ip: req['x-real-ip'],
+      ip: dto.IpAddress,
       cardCryptoGramPacket: dto.CardCryptogramPacket,
       amount: dto.Amount,
       invoiceId: dto.InvoiceId,
