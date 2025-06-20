@@ -2,9 +2,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsNumber, Min } from 'class-validator';
 
 export class ConfirmHoldDto {
-  @ApiProperty()
-  @IsNumber()
-  @Min(1)
+  @ApiProperty({ description: 'Номер транзакции в системе' })
+  @IsNotEmpty()
+  @IsInt() // Должно быть Long согласно документации, исправлено
+  @Type(() => Number)
   TransactionId: number;
 
   @ApiProperty()

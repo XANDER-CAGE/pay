@@ -28,6 +28,8 @@ import { FindDto } from './dto/find.dto';
 import { CardsHoldDto } from './dto/cards-hold.dto';
 import { TokensHoldDto } from './dto/tokens-hold.dto';
 import { TestDto } from './dto/test.dto'
+import { GetTransactionDto } from './dto/get-transaction.dto';
+import { TransactionListDto } from './dto/transaction-list.dto';
 
 @ApiTags('Transactions')
 @Controller('payments')
@@ -44,11 +46,26 @@ export class PaymentsController {
     return this.paymentsService.test();
   }
 
-  @UseGuards(AuthGuard)
   @Post('get')
-  @HttpCode(200)
-  async getTransaction(@Body() dto: GetTransactionDto, @Req() req: MyReq) {
-    return await this.paymentsService.getTransaction(dto.TransactionId, req.cashboxId);
+  async get(@Body() dto: GetTransactionDto, @Req() req: Request): Promise<any> {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+          throw new UnauthorizedException();
+      }
+      
+      const base64Credentials = authHeader.split(' ')[1];
+      const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+      const [publicId, apiSecret] = credentials.split(':');
+      
+      const cashbox = await this.prisma.cashbox.findFirst({
+          where: { public_id: publicId, api_secret: apiSecret, is_active: true },
+      });
+      
+      if (!cashbox) {
+          throw new UnauthorizedException();
+      }
+      
+      return await this.paymentsService.getTransaction(dto.TransactionId, cashbox.id);
   }
 
   @UseGuards(AuthGuard)
@@ -136,14 +153,27 @@ export class PaymentsController {
   @UseGuards(AuthGuard)
   @HttpCode(200)
   @Post('cards/auth')
-  async cardsAuth(@Body() dto: CardsHoldDto, @Req() req: MyReq) {
+  async cardsAuth(@Body() dto: CardsHoldDto, @Req() req: Request): Promise<any> {
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        throw new UnauthorizedException();
+    }
+
+    const requestId: string = req.headers['x-request-id'] as string;
+    const cache: string = await this.cacheManager.get(requestId);
+    if (cache) {
+        return JSON.parse(cache);
+    }
+
+
     return await this.paymentsService.cardsAuth({
       accountId: dto.AccountId,
       amount: +dto.Amount,
       cardCryptoGramPacket: dto.CardCryptogramPacket,
       description: dto.Description,
       invoiceId: dto.InvoiceId,
-      ip: req['x-real-ip'],
+      ip: dto.IpAddress,
       jsonData: dto.JsonData,
     });
   }
@@ -255,12 +285,75 @@ export class PaymentsController {
 
   @HttpCode(200)
   @Post('find')
-  async find(@Body() dto: FindDto, @Req() req: MyReq) {
-    return await this.paymentsService.find(dto.InvoiceId, req.cashboxId);
+  async find(@Body() dto: FindDto, @Req() req: Request): Promise<any> {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+          throw new UnauthorizedException();
+      }
+      
+      const base64Credentials = authHeader.split(' ')[1];
+      const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+      const [publicId, apiSecret] = credentials.split(':');
+      
+      const cashbox = await this.prisma.cashbox.findFirst({
+          where: { public_id: publicId, api_secret: apiSecret, is_active: true },
+      });
+      
+      if (!cashbox) {
+          throw new UnauthorizedException();
+      }
+      
+      return await this.paymentsService.find(dto.InvoiceId, cashbox.id);
   }
 
   @Get(':transactionId')
-  async invoice(@Param('transactionId') transactionId: string) {
-    return await this.paymentsService.getDataByByTransactionId(+transactionId);
+  async getTransactionInfo(@Param('transactionId') transactionId: string) {
+      // Этот метод должен возвращать публичную информацию о транзакции
+      // Без аутентификации для интеграции с виджетами
+      return await this.paymentsService.getPublicTransactionInfo(+transactionId);
+  }
+
+  @Post('list')
+  async list(@Body() dto: TransactionListDto, @Req() req: Request): Promise<any> {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+          throw new UnauthorizedException();
+      }
+      
+      const base64Credentials = authHeader.split(' ')[1];
+      const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+      const [publicId, apiSecret] = credentials.split(':');
+      
+      const cashbox = await this.prisma.cashbox.findFirst({
+          where: { public_id: publicId, api_secret: apiSecret, is_active: true },
+      });
+      
+      if (!cashbox) {
+          throw new UnauthorizedException();
+      }
+      
+      return await this.paymentsService.getTransactionsList(dto, cashbox.id);
+  }
+
+  @Post('v2/payments/list')
+  async listV2(@Body() dto: TransactionListV2Dto, @Req() req: Request): Promise<any> {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+          throw new UnauthorizedException();
+      }
+      
+      const base64Credentials = authHeader.split(' ')[1];
+      const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+      const [publicId, apiSecret] = credentials.split(':');
+      
+      const cashbox = await this.prisma.cashbox.findFirst({
+          where: { public_id: publicId, api_secret: apiSecret, is_active: true },
+      });
+      
+      if (!cashbox) {
+          throw new UnauthorizedException();
+      }
+      
+      return await this.paymentsService.getTransactionsListV2(dto, cashbox.id);
   }
 }

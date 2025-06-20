@@ -100,8 +100,8 @@ export class PaymentsService {
   async test() {
       const uuid = require('uuid').v4();
       return {
-        Success: true,
-        Message: uuid
+          "Success": true,
+          "Message": uuid
       };
   }
 
@@ -421,7 +421,38 @@ export class PaymentsService {
   }
 
   async handle3DSPost(dto: Handle3dsPostDto): Promise<CoreApiResponse> {
-    console.log('DTO', dto);
+    //console.log('DTO', dto);
+    const checkHook = await this.prisma.hook.findFirst({
+      where: { cashbox_id: cashbox.id, is_active: true, type: 'check' },
+    });
+
+    if (checkHook) {
+    const checkResult = await this.hookService.sendHook(
+      checkHook.url,
+      'check',
+      cashbox.password_api, // или отдельное поле api_secret
+      transaction,
+      card,
+      ip,
+      transaction.json_data,
+    );
+    
+    if (!checkResult.success || checkResult.code !== 0) {
+      // Обработка отказа от check hook-а
+      const model = CoreApiResponse.invalidErrorCode();
+      await this.prisma.transaction.update({
+        where: { id: transaction.id },
+        data: {
+          status: 'Declined',
+          fail_reason: model.Model.Reason,
+          reason_code: model.Model.ReasonCode,
+          status_code: checkResult.code,
+        },
+      });
+      this.cancelCardChargeTimeout(transaction.id);
+      return model;
+    }
+  }
 
     let transactionId;
     if (
@@ -539,9 +570,10 @@ export class PaymentsService {
     this.cancelCardChargeTimeout(transaction.id);
     const updatedPayment = await this.prisma.transaction.findFirst({
       where: { id: transaction.id },
+      include: { card: true, ip: true, cashbox: true },
     });
 
-    if (model.Success) {
+    /*if (model.Success) {
       const payHook = await this.prisma.hook.findFirst({
         where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
       });
@@ -555,7 +587,42 @@ export class PaymentsService {
       if (failHook) {
         this.hookService.hook(failHook.url, 'Payment', updatedPayment, card);
       }
+    }*/
+
+    if (model.Success) {
+      // Pay hook для успешного платежа
+      const payHook = await this.prisma.hook.findFirst({
+        where: { cashbox_id: cashbox.id, is_active: true, type: 'pay' },
+      });
+      if (payHook) {
+        await this.hookService.sendHook(
+          payHook.url,
+          'pay',
+          cashbox.password_api,
+          updatedPayment,
+          updatedPayment.card,
+          updatedPayment.ip,
+          updatedPayment.json_data,
+        );
+      }
+    } else {
+      // Fail hook для неуспешного платежа
+      const failHook = await this.prisma.hook.findFirst({
+        where: { cashbox_id: cashbox.id, is_active: true, type: 'fail' },
+      });
+      if (failHook) {
+        await this.hookService.sendHook(
+          failHook.url,
+          'fail',
+          cashbox.password_api,
+          updatedPayment,
+          updatedPayment.card,
+          updatedPayment.ip,
+          updatedPayment.json_data,
+        );
+      }
     }
+
     return model;
   }
 
@@ -836,10 +903,7 @@ export class PaymentsService {
     return model;
   }
 
-  async confirmHold(
-    dto: ConfirmHoldDto,
-    cashboxId: number,
-  ): Promise<IConfirmHoldResponse> {
+  async confirmHold(dto: ConfirmHoldDto, cashboxId: number): Promise<IConfirmHoldResponse> {
     const transaction = await this.prisma.transaction.findFirst({
       where: {
         id: dto.TransactionId,
@@ -874,7 +938,7 @@ export class PaymentsService {
       cashbox,
       amount: dto.Amount,
     });
-    const confirmHook = await this.prisma.hook.findFirst({
+    /*const confirmHook = await this.prisma.hook.findFirst({
       where: { cashbox_id: cashbox.id, is_active: true, type: 'confirm' },
     });
     if (confirmHook) {
@@ -888,10 +952,28 @@ export class PaymentsService {
         card,
         updatedPayment.json_data,
       );
-    }
+    }*/
     if (processingRes.Success) {
-      this.cancelHoldTimeout(transaction.id);
-    }
+      const confirmHook = await this.prisma.hook.findFirst({
+            where: { cashbox_id: cashbox.id, is_active: true, type: 'confirm' },
+          });
+          if (confirmHook) {
+            const updatedPayment = await this.prisma.transaction.findFirst({
+              where: { id: transaction.id },
+              include: { card: true, ip: true, cashbox: true },
+            });
+            
+            await this.hookService.sendHook(
+              confirmHook.url,
+              'confirm',
+              cashbox.password_api,
+              updatedPayment,
+              updatedPayment.card,
+              updatedPayment.ip,
+              updatedPayment.json_data,
+            );
+          }
+      }    
     return processingRes;
   }
 
@@ -920,6 +1002,26 @@ export class PaymentsService {
     });
     if (processingRes.Success) {
       this.cancelHoldTimeout(transaction.id);
+      
+      const cancelHook = await this.prisma.hook.findFirst({
+        where: { cashbox_id: cashboxId, is_active: true, type: 'cancel' },
+      });
+      if (cancelHook) {
+        const updatedPayment = await this.prisma.transaction.findFirst({
+          where: { id: transaction.id },
+          include: { cashbox: true },
+        });
+        
+        await this.hookService.sendHook(
+          cancelHook.url,
+          'cancel',
+          updatedPayment.cashbox.password_api,
+          updatedPayment,
+        );
+    }
+  }
+    /*if (processingRes.Success) {
+      this.cancelHoldTimeout(transaction.id);
       const cancelHook = await this.prisma.hook.findFirst({
         where: { cashbox_id: cashboxId, type: 'cancel' },
       });
@@ -935,7 +1037,8 @@ export class PaymentsService {
           updatedPayment.json_data,
         );
       }
-    }
+    }*/
+
     return processingRes;
   }
 
@@ -944,6 +1047,7 @@ export class PaymentsService {
       where: {
         id: +dto.TransactionId,
         cashbox_id: cashboxId,
+        status: 'Completed' 
       },
       include: {
         card: true,
@@ -956,13 +1060,23 @@ export class PaymentsService {
     if (transaction.status != 'Completed') {
       throw new NotAcceptableException('Transaction is not completed');
     }
+
+    if (dto.Amount > Number(transaction.amount)) {
+        throw new NotAcceptableException('Сумма возврата не может превышать сумму платежа');
+    }
+
     const cashbox = transaction.cashbox;
     const card = transaction.card;
     if (card.processing_card_token == 'test') {
       await this.testService.refundTEST(transaction);
     } else {
-      await this.processingService.refund({ transaction, card });
+      await this.processingService.refund({ 
+            transaction, 
+            card,
+            amount: dto.Amount // ПЕРЕДАТЬ сумму возврата
+      });
     }
+    /*
     const refundHook = await this.prisma.hook.findFirst({
       where: { cashbox_id: cashbox.id, is_active: true, type: 'refund' },
     });
@@ -975,7 +1089,43 @@ export class PaymentsService {
         'Refund',
         updatedPayment,
         card,
-        updatedPayment.json_data,
+        dto.JsonData || updatedPayment.json_data
+      );
+    }*/
+    const refundHook = await this.prisma.hook.findFirst({
+      where: { cashbox_id: cashbox.id, is_active: true, type: 'refund' },
+    });
+    if (refundHook) {
+      const updatedPayment = await this.prisma.transaction.findFirst({
+        where: { id: transaction.id },
+        include: { card: true, ip: true, cashbox: true },
+      });
+      
+      // Создаем отдельную транзакцию возврата или используем существующую
+      const refundTransaction = await this.prisma.transaction.create({
+        data: {
+          amount: transaction.amount,
+          currency: transaction.currency,
+          type: 'refund',
+          status: 'Completed',
+          cashbox_id: transaction.cashbox_id,
+          card_id: transaction.card_id,
+          invoice_id: transaction.invoice_id,
+          account_id: transaction.account_id,
+          description: `Refund for transaction ${transaction.id}`,
+          processing_ref_num: `refund_${transaction.id}_${Date.now()}`,
+        },
+      });
+      
+      await this.hookService.sendHook(
+        refundHook.url,
+        'refund',
+        cashbox.password_api,
+        refundTransaction,
+        transaction.card,
+        transaction.ip,
+        transaction.json_data,
+        transaction, // original transaction
       );
     }
     return {
@@ -989,20 +1139,24 @@ export class PaymentsService {
 
   async payByToken(dto: IPayByToken): Promise<CoreApiResponse> {
     const existingPayment = await this.prisma.transaction.findFirst({
-      where: {
-        invoice_id: dto.invoiceId,
-        cashbox_id: dto.cashboxId,
-      },
+        where: {
+            invoice_id: dto.invoiceId,
+            cashbox: {
+                public_id: dto.publicId
+            }
+        },
     });
+    
     if (existingPayment) {
       return (await this.find(dto.invoiceId, dto.cashboxId)) as CoreApiResponse;
     }
     const card = await this.prisma.card.findFirst({
-      where: {
-        tk: dto.token,
-        organization_id: dto.organizationId,
-      },
+        where: {
+            tk: dto.token,
+            organization_id: dto.organizationId,
+        },
     });
+
     let model: CoreApiResponse;
     if (!card) {
       model = CoreApiResponse.issuerNotFound({
@@ -1244,6 +1398,7 @@ export class PaymentsService {
         invoice_id: invoiceId,
       },
       include: { card: true, ip: true, cashbox: true },
+      orderBy: { created_at: 'desc' },
     });
     if (!transaction) return { Success: false, Message: 'Not found' };
     const card = transaction.card;
