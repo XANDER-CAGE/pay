@@ -1,3 +1,5 @@
+import { reasonCodes, cardHolderMessages } from '../var/reason-codes.object.var';
+
 interface IData {
   ReasonCode?: number;
   Pan?: string;
@@ -167,6 +169,12 @@ export class CoreApiResponse {
     const cardExp = data.CardExpDate
       ? data.CardExpDate.substring(2) + '/' + data.CardExpDate.substring(0, 2)
       : null;
+    
+    // Получаем причину и сообщение для плательщика из справочников
+    const reason = data.Reason || reasonCodes[data.ReasonCode] || 'Unknown';
+    const cardHolderMessage = data.CardHolderMessage || 
+      cardHolderMessages[data.ReasonCode] || 'Ошибка обработки платежа';
+
     const Model = {
       ReasonCode: data.ReasonCode || 0,
       PublicId: data.PublicId || null,
@@ -227,8 +235,8 @@ export class CoreApiResponse {
       CardExpDate: cardExp || null,
       CardType: data.CardType || null,
       Status: data.Status || null,
-      Reason: data.Reason || null,
-      CardHolderMessage: data.CardHolderMessage || null,
+      Reason: reason,
+      CardHolderMessage: cardHolderMessage,
       Refunded: data.Refunded || null,
       Name: data.Name || null,
       Token: data.Token || null,
@@ -244,7 +252,6 @@ export class CoreApiResponse {
       AccountId: successData.AccountId,
       Amount: successData.Amount,
       CardExpDate: successData.CardExpDate,
-      CardHolderMessage: 'Оплата успешно проведена',
       CardType: successData.CardType,
       Date: successData.Date.toISOString().replace('T', ' ').replace('Z', ''),
       Description: successData.Description,
@@ -257,7 +264,6 @@ export class CoreApiResponse {
       Name: successData.Name,
       Pan: successData.Pan,
       PublicId: successData.PublicId,
-      Reason: 'Approved',
       ReasonCode: 0,
       Refunded: false,
       Status: 'Completed',
@@ -267,176 +273,77 @@ export class CoreApiResponse {
     });
   }
 
-  static insufficentFunds(data: IInsufficientFunds) {
+  static insufficentFunds(data: any) {
     return new CoreApiResponse({
-      AccountId: data.AccountId,
-      Amount: data.Amount,
-      CardExpDate: data.CardExpDate,
-      CardHolderMessage: 'Недостаточно средств на карте',
-      CardType: data.CardType,
-      Date: data.Date,
-      Description: data.Description,
-      GatewayName: data.GatewayName,
-      InvoiceId: data.InvoiceId,
-      IpAddress: data.IpAddress,
-      IpCity: data.IpCity,
-      IpCountry: data.IpCountry,
-      IpRegion: data.IpRegion,
-      Name: data.Name,
-      Pan: data.Pan,
-      PublicId: data.PublicId,
-      Reason: 'InsufficientFunds',
+      ...data,
       ReasonCode: 5051,
       Refunded: false,
       Status: 'Declined',
       Success: false,
-      Token: data.Token,
-      TransactionId: data.TransactionId,
     });
   }
 
-  static issuerNotFound(data: INoSuchIssuer) {
+  static issuerNotFound(data: any) {
     return new CoreApiResponse({
-      AccountId: data.AccountId,
-      Amount: data.Amount,
-      CardHolderMessage: 'Токен карты не найден',
-      Date: data.Date,
-      Description: data.Description,
-      InvoiceId: data.InvoiceId,
-      Reason: 'No such issuer',
+      ...data,
       ReasonCode: 5015,
       Refunded: false,
       Status: 'Declined',
       Success: false,
-      Token: data.Token,
     });
   }
 
-  static doNotHonor(data: IDoNotHonor) {
+  static doNotHonor(data: any) {
     return new CoreApiResponse({
-      AccountId: data.AccountId,
-      Amount: data.Amount,
-      CardExpDate: data.CardExpDate,
-      CardHolderMessage:
-        'Свяжитесь с вашим банком или воспользуйтесь другой картой',
-      CardType: data.CardType,
-      Date: new Date(),
-      Description: data.Description,
-      GatewayName: data.GatewayName,
-      InvoiceId: data.InvoiceId,
-      Name: data.Name,
-      Pan: data.Pan,
-      PublicId: data.PublicId,
-      Reason: 'DoNotHonor',
+      ...data,
       ReasonCode: 5005,
       Refunded: false,
       Status: 'Declined',
       Success: false,
-      Token: data.Token,
-      TransactionId: data.TransactionId,
+      Date: new Date(),
     });
   }
 
   static hold(successData: ISuccess) {
     return new CoreApiResponse({
-      AccountId: successData.AccountId,
-      Amount: successData.Amount,
-      CardExpDate: successData.CardExpDate,
-      CardHolderMessage: 'Холдирование успешно авторизован',
-      CardType: successData.CardType,
-      Date: successData.Date.toISOString().replace('T', ' ').replace('Z', ''),
-      Description: successData.Description,
-      GatewayName: successData.GatewayName,
-      InvoiceId: successData.InvoiceId,
-      IpAddress: successData.IpAddress,
-      IpCity: successData.IpCity,
-      IpCountry: successData.IpCountry,
-      IpRegion: successData.IpRegion,
-      Name: successData.Name,
-      Pan: successData.Pan,
-      PublicId: successData.PublicId,
-      Reason: 'Approved',
+      ...successData,
       ReasonCode: 0,
       Refunded: false,
       Status: 'Authorized',
       Success: true,
-      Token: successData.Token,
-      TransactionId: successData.TransactionId,
+      Date: successData.Date.toISOString().replace('T', ' ').replace('Z', ''),
     });
   }
 
   static wrongCryptogram() {
     return new CoreApiResponse({
-      CardHolderMessage: 'Неправильная криптограмма',
-      Reason: 'Wrong cryptogram packet',
       ReasonCode: 7000,
       Status: 'Declined',
       Success: false,
     });
   }
 
-  // TODO: review returning data
   static secure3d() {
     return new CoreApiResponse({
-      AccountId: null,
-      Amount: null,
-      CardExpDate: null,
-      CardHolderMessage: '3-D Secure авторизация не пройдена',
-      CardType: null,
-      Date: null,
-      Description: null,
-      GatewayName: null,
-      InvoiceId: null,
-      IpAddress: null,
-      IpCity: null,
-      IpCountry: null,
-      IpRegion: null,
-      Name: null,
-      Pan: null,
-      PublicId: null,
-      Reason: 'Authentication failed',
       ReasonCode: 5206,
       Refunded: false,
       Status: 'Declined',
       Success: false,
-      Token: null,
-      TransactionId: null,
     });
   }
 
-  // TODO: review returning data
   static pending(transactionId: number) {
     return new CoreApiResponse({
-      AccountId: null,
-      Amount: null,
-      CardExpDate: null,
-      CardHolderMessage: 'Транзакция в процессе',
-      CardType: null,
-      Date: null,
-      Description: null,
-      GatewayName: null,
-      InvoiceId: null,
-      IpAddress: null,
-      IpCity: null,
-      IpCountry: null,
-      IpRegion: null,
-      Name: null,
-      Pan: null,
-      PublicId: null,
-      Reason: 'Transaction is processing',
       ReasonCode: 5000,
       Refunded: false,
       Status: 'Pending',
       Success: false,
-      Token: null,
       TransactionId: transactionId,
     });
   }
 
   static notPermitted() {
     return new CoreApiResponse({
-      CardHolderMessage: 'карта заблокирована или еще не активирована',
-      Reason: 'Transaction Not Permitted',
       ReasonCode: 5057,
       Success: false,
     });
@@ -444,9 +351,85 @@ export class CoreApiResponse {
 
   static invalidErrorCode() {
     return new CoreApiResponse({
-      CardHolderMessage: 'Некорректное значение code',
-      Reason: 'InvalidErrorCode',
       ReasonCode: 6002,
+      Success: false,
+    });
+  }
+
+  static cardExpired(data?: any) {
+    return new CoreApiResponse({
+      ...data,
+      ReasonCode: 5054,
+      Status: 'Declined',
+      Success: false,
+    });
+  }
+static fraudSuspected(data?: any) {
+    return new CoreApiResponse({
+      ...data,
+      ReasonCode: 5034,
+      Status: 'Declined', 
+      Success: false,
+    });
+  }
+
+  static incorrectCVV(data?: any) {
+    return new CoreApiResponse({
+      ...data,
+      ReasonCode: 5082,
+      Status: 'Declined',
+      Success: false,
+    });
+  }
+
+  static restrictedCard(data?: any) {
+    return new CoreApiResponse({
+      ...data,
+      ReasonCode: 5036,
+      Status: 'Declined',
+      Success: false,
+    });
+  }
+
+  static timeout() {
+    return new CoreApiResponse({
+      ReasonCode: 5091,
+      Status: 'Declined',
+      Success: false,
+    });
+  }
+
+  static systemError() {
+    return new CoreApiResponse({
+      ReasonCode: 5096,
+      Status: 'Declined', 
+      Success: false,
+    });
+  }
+
+  static amountError(data?: any) {
+    return new CoreApiResponse({
+      ...data,
+      ReasonCode: 5013,
+      Status: 'Declined',
+      Success: false,
+    });
+  }
+
+  static invalidCardNumber(data?: any) {
+    return new CoreApiResponse({
+      ...data,
+      ReasonCode: 5014,
+      Status: 'Declined',
+      Success: false,
+    });
+  }
+
+    static errorByCode(code: number, data?: any) {
+    return new CoreApiResponse({
+      ...data,
+      ReasonCode: code,
+      Status: 'Declined',
       Success: false,
     });
   }
